@@ -1,50 +1,76 @@
-// server.js
 const express = require("express");
 const multer = require("multer");
 const cors = require("cors");
+const mongoose = require("mongoose");
 const path = require("path");
 const fs = require("fs");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
-app.use(express.static("public"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Cấu hình lưu file âm thanh
+// 👉 MongoDB Atlas
+mongoose.connect(process.env.MONGO_URL || "mongodb+srv://<your_mongo_url>", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+const User = mongoose.model("User", new mongoose.Schema({
+  email: String,
+  password: String
+}));
+
+const File = mongoose.model("File", new mongoose.Schema({
+  user: String,
+  filename: String
+}));
+
+// 👉 Tạo thư mục uploads nếu chưa có
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+
+// 👉 Cấu hình lưu file upload
 const storage = multer.diskStorage({
-  destination: "./uploads/",
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname));
-  },
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
 });
 const upload = multer({ storage });
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Upload file âm thanh
-app.post("/upload", upload.single("audio"), (req, res) => {
-  console.log("Đã nhận file:", req.file.filename);
-  res.json({ success: true, filename: req.file.filename });
+// 👉 Gửi file tĩnh (html, css, js)
+app.get("/", (_, res) => res.sendFile(path.join(__dirname, "index.html")));
+app.get("/style.css", (_, res) => res.sendFile(path.join(__dirname, "style.css")));
+app.get("/main.js", (_, res) => res.sendFile(path.join(__dirname, "main.js")));
+
+// 👉 API Đăng ký
+app.post("/api/signup", async (req, res) => {
+  const { email, password } = req.body;
+  const exists = await User.findOne({ email });
+  if (exists) return res.json({ msg: "Email đã tồn tại!" });
+  await User.create({ email, password });
+  res.json({ msg: "Đăng ký thành công!" });
 });
 
-// Lấy file âm thanh mới nhất
-app.get("/latest", (req, res) => {
-  fs.readdir("./uploads", (err, files) => {
-    if (err || files.length === 0) return res.status(404).send("No file");
-    const latestFile = files
-      .map(f => ({ name: f, time: fs.statSync("./uploads/" + f).mtime.getTime() }))
-      .sort((a, b) => b.time - a.time)[0].name;
-    res.send(latestFile);
-  });
+// 👉 API Đăng nhập
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({ email, password });
+  if (!user) return res.json({ msg: "Sai tài khoản hoặc mật khẩu!" });
+  res.json({ msg: "Đăng nhập thành công", user: user.email });
 });
 
-// ESP32 tải file
-app.get("/audio/:name", (req, res) => {
-  const filePath = path.join(__dirname, "uploads", req.params.name);
-  res.sendFile(filePath);
+// 👉 API Upload file ghi âm
+app.post("/api/upload", upload.single("file"), async (req, res) => {
+  const { user } = req.body;
+  await File.create({ user, filename: req.file.filename });
+  res.json({ msg: "Tải lên thành công!" });
 });
 
-app.listen(PORT, () => console.log(`✅ Server chạy tại http://localhost:${PORT}`));
-app.get("/", (req, res) => {
-  res.send("🚀 Emobox server is running!");
+// 👉 API Lấy danh sách file của user
+app.get("/api/files/:user", async (req, res) => {
+  const files = await File.find({ user: req.params.user });
+  res.json(files);
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Emobox server chạy tại cổng ${PORT}`));
