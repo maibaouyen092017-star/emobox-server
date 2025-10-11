@@ -1,21 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap');
+
+:root {
+  --bg: #0d1117;
+  --card: #1c1f26;
+  --primary: #2f80ed;
+  --secondary: #56ccf2;
+  --text: #e0e0e0;
+  --accent: #ffffff33;
+}
+
 body {
-  font-family: sans-serif;
+  margin: 0;
+  height: 100vh;
+  background: radial-gradient(circle at 30% 20%, #1a237e, #0d1117);
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: var(--text);
+}
+
+.container {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 30px;
+  width: 90%;
+  max-width: 420px;
   text-align: center;
-  background: #0b132b;
-  color: #fff;
-  padding: 40px;
+  box-shadow: 0 0 25px rgba(46, 116, 255, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.3s ease;
 }
-button {
-  margin: 10px;
-  padding: 10px 20px;
+
+.container:hover {
+  box-shadow: 0 0 35px rgba(86, 204, 242, 0.3);
+}
+
+h1 {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+input {
+  width: 90%;
+  padding: 12px;
+  margin: 8px 0;
   border: none;
-  background: #3a86ff;
-  color: #fff;
-  font-size: 16px;
   border-radius: 8px;
-  cursor: pointer;
+  background: #222733;
+  color: white;
+  font-size: 15px;
+  outline: none;
+  transition: all 0.2s ease;
 }
-button:disabled {
-  background: gray;
-  cursor: not-allowed;
+
+input:focus {
+  box-shadow: 0 0 8px var(--secondary);
+}
+
+button {
+  padding: 10px 20px;
+  margin: 8px 5px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px var(--secondary);
+}
+
+.record-buttons {
+  margin: 15px 0;
+}
+
+#startBtn {
+  background: linear-gradient(90deg, #00c853, #64dd17);
+}
+#stopBtn {
+  background: linear-gradient(90deg, #e53935, #ff7043);
+}
+#uploadBtn {
+  background: linear-gradient(90deg, #2f80ed, #56ccf2);
+}
+
+audio {
+  margin-top: 10px;
+  width: 100%;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin-top: 10px;
+}
+li {
+  background: #242a36;
+  margin: 6px 0;
+  padding: 8px;
+  border-radius: 8px;
+}
+li a {
+  color: var(--secondary);
+  text-decoration: none;
+}
+li a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 500px) {
+  .container {
+    padding: 20px;
+  }
 }
