@@ -59,3 +59,17 @@ document.getElementById("recordAlarmBtn").addEventListener("click", async () => 
   recorder.start();
   setTimeout(() => recorder.stop(), 5000);
 });
+async function loadMessages() {
+  const res = await fetch("/api/messages?email=" + user.email);
+  const msgs = await res.json();
+  document.getElementById("sentMessages").innerHTML = msgs.map(m => `
+    <div class="message-card">
+      <p>📅 ${new Date(m.time).toLocaleString()}</p>
+      <p>🎧 ${m.file}</p>
+      <span class="status ${m.listened ? 'listened' : 'unread'}">
+        ${m.listened ? '✅ Đã nghe' : '⌛ Chưa nghe'}
+      </span>
+    </div>
+  `).join("");
+}
+
