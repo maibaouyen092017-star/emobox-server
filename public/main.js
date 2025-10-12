@@ -108,6 +108,45 @@ btnSend.onclick = async () => {
     else alert("Lỗi gửi: " + (result.error||""));
   } else alert("Upload thất bại");
 };
+let alarmRecorder, alarmAudioChunks = [];
+
+document.getElementById("start-alarm-record").onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  alarmRecorder = new MediaRecorder(stream);
+  alarmAudioChunks = [];
+
+  alarmRecorder.ondataavailable = e => alarmAudioChunks.push(e.data);
+  alarmRecorder.onstop = () => {
+    const audioBlob = new Blob(alarmAudioChunks, { type: 'audio/mp3' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    document.getElementById("alarm-preview").src = audioUrl;
+    document.getElementById("alarm-preview").style.display = "block";
+    document.getElementById("play-alarm-audio").disabled = false;
+    document.getElementById("upload-alarm-btn").disabled = false;
+  };
+
+  alarmRecorder.start();
+  document.getElementById("start-alarm-record").disabled = true;
+  document.getElementById("stop-alarm-record").disabled = false;
+};
+
+document.getElementById("stop-alarm-record").onclick = () => {
+  alarmRecorder.stop();
+  document.getElementById("stop-alarm-record").disabled = true;
+  document.getElementById("start-alarm-record").disabled = false;
+};
+
+// Gửi báo thức
+document.getElementById("upload-alarm-btn").onclick = async () => {
+  const audioBlob = new Blob(alarmAudioChunks, { type: 'audio/mp3' });
+  const formData = new FormData();
+  formData.append("alarmAudio", audioBlob, "alarm.mp3");
+  formData.append("time", document.getElementById("alarm-time").value);
+
+  await fetch("/api/uploadAlarm", { method: "POST", body: formData });
+  alert("✅ Báo thức giọng nói đã được lưu!");
+};
+
 
 /* ---------- show messages list ---------- */
 async function fetchMessages() {
