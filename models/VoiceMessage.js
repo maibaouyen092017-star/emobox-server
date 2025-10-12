@@ -1,10 +1,13 @@
-import mongoose from "mongoose";
-
-const VoiceMessageSchema = new mongoose.Schema({
+// models/VoiceMessage.js
+import mongoose from 'mongoose';
+const schema = new mongoose.Schema({
   title: String,
-  time: Date,
-  file: String,
-  sent: { type: Boolean, default: false }
+  type: { type: String, enum: ['message','alarm'], default: 'message' },
+  filePath: String, // local path in uploads
+  date: String,
+  time: String,
+  targetDevice: { type: String, default: 'broadcast' },
+  heard: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
 });
-
-export default mongoose.model("VoiceMessage", VoiceMessageSchema);
+export const VoiceMessage = mongoose.model('VoiceMessage', schema);
