@@ -266,4 +266,14 @@ app.delete("/api/clear-alarms", async (req, res) => {
   await Message.deleteMany({ type: "alarm" });
   res.json({ ok: true });
 });
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Phục vụ file xác minh Google Search Console
+app.get('/google621255cdb0916ecf.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'google28152cd60b916ec7.html'));
+});
 
