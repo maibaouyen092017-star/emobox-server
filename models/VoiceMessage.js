@@ -10,4 +10,5 @@ const schema = new mongoose.Schema({
   heard: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 });
-export const VoiceMessage = mongoose.model('VoiceMessage', schema);
+const VoiceMessage = mongoose.model('VoiceMessage', schema);
+export default VoiceMessage;
