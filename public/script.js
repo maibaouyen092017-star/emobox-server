@@ -181,4 +181,86 @@ document.getElementById('logout-btn')?.addEventListener('click', () => {
   localStorage.removeItem('token');
   location.reload();
 });
+// ==================== LOGIN / REGISTER ====================
+
+const loginModal = document.getElementById('login-modal');
+const registerModal = document.getElementById('register-modal');
+const loginBtn = document.getElementById('loginBtn');
+const registerBtn = document.getElementById('registerBtn');
+const userInfo = document.getElementById('user-info');
+
+function checkLogin() {
+  const user = localStorage.getItem('user');
+  if (user) {
+    const name = JSON.parse(user).username;
+    userInfo.innerHTML = `
+      <span>Xin chào, <b>${name}</b></span>
+      <button id="logoutBtn">Đăng xuất</button>
+    `;
+    document.getElementById('logoutBtn').onclick = () => {
+      localStorage.removeItem('user');
+      location.reload();
+    };
+  }
+}
+
+loginBtn.onclick = () => {
+  loginModal.classList.remove('hidden');
+  registerModal.classList.add('hidden');
+};
+registerBtn.onclick = () => {
+  registerModal.classList.remove('hidden');
+  loginModal.classList.add('hidden');
+};
+
+document.getElementById('switchToRegister').onclick = () => {
+  loginModal.classList.add('hidden');
+  registerModal.classList.remove('hidden');
+};
+document.getElementById('switchToLogin').onclick = () => {
+  registerModal.classList.add('hidden');
+  loginModal.classList.remove('hidden');
+};
+
+// Gửi yêu cầu đăng nhập
+document.getElementById('doLogin').onclick = async () => {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+
+  const res = await fetch('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.success) {
+    localStorage.setItem('user', JSON.stringify({ username }));
+    loginModal.classList.add('hidden');
+    checkLogin();
+  } else {
+    alert('Sai tài khoản hoặc mật khẩu!');
+  }
+};
+
+// Gửi yêu cầu đăng ký
+document.getElementById('doRegister').onclick = async () => {
+  const username = document.getElementById('reg-username').value;
+  const password = document.getElementById('reg-password').value;
+
+  const res = await fetch('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+  if (data.success) {
+    alert('Đăng ký thành công! Hãy đăng nhập.');
+    registerModal.classList.add('hidden');
+    loginModal.classList.remove('hidden');
+  } else {
+    alert(data.message);
+  }
+};
+
+checkLogin();
 
