@@ -1,33 +1,78 @@
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Poppins", sans-serif;
+  background: #f8f9fc;
+  color: #333;
+  margin: 0;
+  text-align: center;
 }
 
-.text-gradient {
-  background: linear-gradient(90deg, #ff7eb3, #ff758c);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+header {
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.card {
-  border-radius: 1rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+header h1 { font-size: 1.8em; }
+#loginBtn {
+  background: white;
+  color: #4facfe;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
 }
 
-.card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(255, 118, 136, 0.2);
+.hero {
+  margin: 20px auto;
+  max-width: 800px;
+}
+
+.hero img {
+  width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.alarm-section {
+  margin: 20px auto;
+  padding: 20px;
+  max-width: 500px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
 button {
-  border-radius: 30px !important;
+  margin: 10px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 10px;
+  background: #4facfe;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-@media (max-width: 768px) {
-  h1 {
-    font-size: 1.5rem;
-  }
+button:hover {
+  background: #00c6ff;
+}
 
-  .btn-lg {
-    width: 100%;
+audio {
+  margin-top: 15px;
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  .alarm-section {
+    width: 90%;
+    padding: 10px;
+  }
+  button {
+    width: 90%;
   }
 }
