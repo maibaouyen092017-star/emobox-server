@@ -1,6 +1,37 @@
 import express from "express";
 import multer from "multer";
 import VoiceMessage from "../models/VoiceMessage.js";
+import express from "express";
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const router = express.Router();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../uploads"));
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
+// ✅ Upload voice
+router.post("/upload", upload.single("file"), (req, res) => {
+  console.log("📥 Voice received:", req.file.filename);
+
+  // Gửi tên file sang ESP (MQTT publish)
+  client.publish("emobox/audio", req.file.filename);
+  res.json({ message: "Voice uploaded", file: req.file.filename });
+});
+
+export default router;
 
 const router = express.Router();
 
