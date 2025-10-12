@@ -1,34 +1,47 @@
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
-
+import express from "express";
+import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 const router = express.Router();
 
+const userSchema = new mongoose.Schema({
+  username: { type: String, unique: true },
+  password: String,
+});
+const User = mongoose.model("User", userSchema);
+
 // Đăng ký
-router.post('/register', async (req, res) => {
-  const { username, password } = req.body;
-  const existing = await User.findOne({ username });
-  if (existing) return res.json({ success: false, message: 'Tên đăng nhập đã tồn tại' });
+router.post("/register", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ message: "Thiếu thông tin!" });
 
-  const hashed = await bcrypt.hash(password, 10);
-  const newUser = new User({ username, password: hashed });
-  await newUser.save();
+    const existing = await User.findOne({ username });
+    if (existing) return res.status(400).json({ message: "Tài khoản đã tồn tại!" });
 
-  res.json({ success: true });
+    const hashed = await bcrypt.hash(password, 10);
+    await User.create({ username, password: hashed });
+    res.status(200).json({ message: "Đăng ký thành công!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server!" });
+  }
 });
 
 // Đăng nhập
-router.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) return res.json({ success: false });
+router.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username });
+    if (!user) return res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu!" });
 
-  const match = await bcrypt.compare(password, user.password);
-  if (!match) return res.json({ success: false });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ message: "Sai tài khoản hoặc mật khẩu!" });
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
-  res.json({ success: true, token });
+    res.status(200).json({ message: "Đăng nhập thành công!" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server!" });
+  }
 });
 
 export default router;
