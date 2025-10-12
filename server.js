@@ -18,12 +18,12 @@ const app = express();
 // =========================
 // 🔧 Cấu hình cơ bản
 // =========================
-app.use("/api", voiceRoutes);
-app.use("/api", voiceRoutes);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.use("/auth", authRoutes);
+app.use("/api", voiceRoutes);
 // =========================
 // 📂 Cấu hình đường dẫn tuyệt đối
 // =========================
@@ -52,7 +52,9 @@ app.use("/auth", authRoutes);
 // =========================
 // 📡 Cấu hình MQTT
 // =========================
-const client = mqtt.connect(process.env.MQTT_BROKER || "mqtt://test.mosquitto.org");
+const client = mqtt.connect(process.env.MQTT_BROKER || "mqtt://test.mosquitto.org", {
+  family: 4, // chỉ dùng IPv4
+});
 
 client.on("connect", () => console.log("✅ MQTT Connected"));
 client.on("error", (err) => console.error("❌ MQTT Error:", err));
@@ -98,6 +100,7 @@ app.post("/api/alarm", (req, res) => {
 // =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+
 
 
 
