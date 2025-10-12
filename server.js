@@ -8,6 +8,18 @@ import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import multer from "multer";
+import path from "path";
+
+const uploadAlarm = multer({ dest: "uploads/" });
+
+app.post("/api/uploadAlarm", uploadAlarm.single("alarmAudio"), async (req, res) => {
+  const { time } = req.body;
+  const audioPath = `/uploads/${req.file.filename}`;
+  
+  await Alarm.create({ time, audioPath });
+  res.json({ success: true, message: "Alarm voice uploaded!" });
+});
 
 dotenv.config();
 const PORT = process.env.PORT || 3000;
@@ -182,4 +194,5 @@ app.get("*", (req, res) => {
 
 /* ===== Start server ===== */
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 
