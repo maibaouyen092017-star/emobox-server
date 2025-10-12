@@ -1,119 +1,81 @@
-const Message = require("./models/Message");
-import express from "express";
-import mongoose from "mongoose";
-import multer from "multer";
-import cors from "cors";
-import path from "path";
-import dotenv from "dotenv";
-dotenv.config();
-
+const express = require("express");
+const multer = require("multer");
+const path = require("path");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.static("."));
-// API upload voice
-app.post("/api/upload", upload.single("audio"), async (req, res) => {
-  const newMsg = new Message({
-    email: req.body.email,
-    file: req.file.filename,
-  });
-  await newMsg.save();
-  res.json({ success: true });
-});
 
-// API lấy danh sách tin nhắn theo email người gửi
-app.get("/api/messages", async (req, res) => {
-  const { email } = req.query;
-  const msgs = await Message.find({ email }).sort({ time: -1 });
-  res.json(msgs);
-});
-
-// API ESP báo đã nghe
-app.post("/api/listened", async (req, res) => {
-  const { messageId } = req.body;
-  await Message.findByIdAndUpdate(messageId, { listened: true });
-  res.json({ success: true });
-});
-
-
-// ✅ Kết nối MongoDB
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// === Mô hình dữ liệu ===
-const User = mongoose.model("User", new mongoose.Schema({
-  username: String,
-  password: String,
-  wifiSSID: String,
-  wifiPass: String
-}));
-
-const Alarm = mongoose.model("Alarm", new mongoose.Schema({
-  user: String,
-  time: Date,
-  voiceFile: String,
-  musicFile: { type: String, default: "alarm.mp3" },
-  triggered: { type: Boolean, default: false }
-}));
-
-const Message = mongoose.model("Message", new mongoose.Schema({
-  user: String,
-  voiceFile: String,
-  createdAt: { type: Date, default: Date.now }
-}));
-
-// === Upload file ghi âm ===
-const upload = multer({ dest: "uploads/" });
-app.post("/api/upload", upload.single("file"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ msg: "Không có file" });
-  res.json({ filename: req.file.filename });
-});
-
-// === Tạo báo thức ===
-app.post("/api/alarms", async (req, res) => {
-  const { user, time, voiceFile } = req.body;
-  if (!user || !time || !voiceFile)
-    return res.status(400).json({ msg: "Thiếu dữ liệu" });
-  const a = await Alarm.create({ user, time: new Date(time), voiceFile });
-  res.json({ msg: "Đặt báo thức thành công", alarm: a });
-});
-
-// === Gửi giọng nói trực tiếp ===
-app.post("/api/messages", async (req, res) => {
-  const { user, voiceFile } = req.body;
-  if (!user || !voiceFile) return res.status(400).json({ msg: "Thiếu dữ liệu" });
-  const m = await Message.create({ user, voiceFile });
-  res.json({ msg: "Đã gửi giọng nói", message: m });
-});
-
-// === ESP32 poll ===
-app.get("/api/esp/poll/:user", async (req, res) => {
-  const alarm = await Alarm.findOne({ triggered: false }).sort({ time: 1 });
-  const msg = await Message.findOne({}).sort({ createdAt: -1 });
-
-  res.json({
-    hasAlarm: !!alarm,
-    alarm: alarm
-      ? {
-          id: alarm._id,
-          time: alarm.time,
-          voice: `/uploads/${alarm.voiceFile}`,
-          music: `/music/${alarm.musicFile}`,
-        }
-      : null,
-    hasMessage: !!msg,
-    message: msg ? { voice: `/uploads/${msg.voiceFile}` } : null,
-  });
-});
-
-// === Public thư mục upload & nhạc ===
-app.use("/uploads", express.static("uploads"));
-app.use("/music", express.static("music"));
-app.post("/api/listened", async (req, res) => {
-
+dotenv.config();
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("✅ Server chạy tại cổng", PORT));
 
+// ======= MongoDB setup =======
+mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
+// Schema người dùng
+const UserSchema = new mongoose.Schema({
+  username: String,
+  password: String
+});
+const User = mongoose.model("User", UserSchema);
 
+// Schema báo thức
+const AlarmSchema = new mongoose.Schema({
+  user: String,
+  name: String,
+  time: String,
+  voicePath: String
+});
+const Alarm = mongoose.model("Alarm", AlarmSchema);
+
+// ======= Middlewares =======
+app.use(express.static("."));
+app.use("/music", express.static("music"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// ======= Ghi âm upload =======
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
+});
+const upload = multer({ storage });
+
+// ======= API =======
+
+// Đăng ký tài khoản
+app.post("/register", async (req, res) => {
+  const { username, password } = req.body;
+  if (await User.findOne({ username })) return res.status(400).json({ msg: "Tài khoản đã tồn tại" });
+  await User.create({ username, password });
+  res.json({ msg: "Đăng ký thành công" });
+});
+
+// Đăng nhập
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username, password });
+  if (!user) return res.status(401).json({ msg: "Sai tài khoản hoặc mật khẩu" });
+  res.json({ msg: "Đăng nhập thành công", username });
+});
+
+// Upload file ghi âm
+app.post("/upload", upload.single("audio"), (req, res) => {
+  res.json({ path: req.file.path });
+});
+
+// Tạo báo thức
+app.post("/alarm", async (req, res) => {
+  const { user, name, time, voicePath } = req.body;
+  await Alarm.create({ user, name, time, voicePath });
+  res.json({ msg: "Báo thức đã lưu!" });
+});
+
+// Lấy danh sách báo thức
+app.get("/alarms/:user", async (req, res) => {
+  const alarms = await Alarm.find({ user: req.params.user });
+  res.json(alarms);
+});
+
+app.listen(PORT, () => console.log(`🚀 Server chạy tại http://localhost:${PORT}`));
