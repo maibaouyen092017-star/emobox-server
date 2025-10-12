@@ -1,42 +1,107 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>EmoBox – Báo thức giọng nói yêu thương</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>EmoBox — Kết nối yêu thương</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <header>
-    <h1>💌 EmoBox</h1>
-    <button id="loginBtn">Đăng nhập</button>
-  </header>
-
-  <section class="hero">
-    <img src="https://images.unsplash.com/photo-1581579188871-8e0a2eaf7b11" alt="family" />
-    <h2>Báo thức giọng nói – Kết nối yêu thương</h2>
-    <p>Gửi lời nhắn đến người thân yêu của bạn, kèm theo tiếng chuông ấm áp!</p>
-  </section>
-
-  <section class="alarm-section">
-    <h3>🎙️ Ghi âm giọng nói cho báo thức</h3>
-    <label>Ngày báo thức:</label>
-    <input type="date" id="alarm-date" required>
-    <label>Giờ báo thức:</label>
-    <input type="time" id="alarm-time" required>
-
-    <div class="record-controls">
-      <button id="startRecord">Bắt đầu ghi âm</button>
-      <button id="stopRecord" disabled>Dừng ghi âm</button>
-      <button id="playAudio" disabled>Nghe lại</button>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-white bg-white shadow-sm">
+    <div class="container">
+      <a class="navbar-brand d-flex align-items-center" href="#">
+        <img src="https://img.icons8.com/fluency/48/000000/music-notes.png" width="36" class="me-2"/>
+        <strong>EmoBox</strong>
+      </a>
+      <div id="navAuth" class="ms-auto">
+        <button id="btnLogin" class="btn btn-outline-primary me-2">Đăng nhập</button>
+        <button id="btnSignup" class="btn btn-primary">Đăng ký</button>
+      </div>
+      <div id="navUser" class="d-none ms-auto align-items-center">
+        <span id="navUserName" class="me-2"></span>
+        <button id="btnLogout" class="btn btn-sm btn-outline-secondary">Đăng xuất</button>
+      </div>
     </div>
+  </nav>
 
-    <audio id="preview" controls style="display:none;"></audio>
-    <button id="sendAlarm" disabled>📤 Gửi báo thức</button>
-  </section>
+  <main class="container py-4">
+    <div class="row g-4">
+      <div class="col-12 col-md-6">
+        <div class="card shadow-sm p-3">
+          <h4>🎤 Gửi lời nhắn ngay (Realtime)</h4>
+          <p class="text-muted small">Ghi âm, nghe lại, gửi ngay — ESP sẽ nhận và phát nếu đang online.</p>
 
-  <footer>❤️ EmoBox – Tình thân trong từng âm thanh</footer>
+          <div class="d-grid gap-2">
+            <button id="btnStartNow" class="btn btn-danger btn-lg">🎙️ Ghi âm ngay</button>
+            <button id="btnStopNow" class="btn btn-secondary btn-lg" disabled>⏹️ Dừng</button>
+            <audio id="audioNow" controls class="w-100 mt-2" style="display:none"></audio>
+            <input id="nowTitle" class="form-control mt-2" placeholder="Tiêu đề (ví dụ: Lời chúc)" />
+            <select id="nowDevice" class="form-select mt-2">
+              <option value="all">Toàn bộ thiết bị</option>
+              <option value="emobox-01">Thiết bị emobox-01</option>
+            </select>
+            <button id="btnSendNow" class="btn btn-success" disabled>📤 Gửi ngay</button>
+          </div>
+        </div>
 
-  <script src="script.js"></script>
+        <div class="card shadow-sm p-3 mt-4">
+          <h4>⏰ Đặt báo thức bằng giọng nói</h4>
+          <p class="text-muted small">Chọn ngày + giờ, ghi âm lời nhắn — đến giờ ESP sẽ phát nhạc báo + giọng bạn.</p>
+
+          <div class="mb-2">
+            <input id="alarmDate" type="date" class="form-control mb-2" />
+            <input id="alarmTime" type="time" class="form-control mb-2" />
+            <input id="alarmTitle" class="form-control mb-2" placeholder="Tên báo thức (ví dụ: Uống thuốc)" />
+          </div>
+
+          <div class="d-grid gap-2">
+            <button id="btnStartAlarm" class="btn btn-warning">🎙️ Ghi âm cho báo thức</button>
+            <button id="btnStopAlarm" class="btn btn-secondary" disabled>⏹️ Dừng</button>
+            <audio id="audioAlarm" controls class="w-100 mt-2" style="display:none"></audio>
+            <button id="btnSetAlarm" class="btn btn-primary" disabled>💾 Lưu báo thức</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-md-6">
+        <div class="card shadow-sm p-3">
+          <h4>🕰️ Lịch & Tin nhắn của bạn</h4>
+          <div id="messagesList" style="max-height:600px; overflow:auto"></div>
+        </div>
+        <div class="card shadow-sm p-3 mt-3 text-center">
+          <h5>Gợi ý & hình ảnh</h5>
+          <div class="d-flex justify-content-center gap-2 mt-2">
+            <img src="https://images.pexels.com/photos/5212340/pexels-photo-5212340.jpeg" class="rounded" style="width:48%" />
+            <img src="https://images.pexels.com/photos/33962/senior-couple.jpg" class="rounded" style="width:48%" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Auth modal -->
+  <div class="modal" tabindex="-1" id="authModal">
+    <div class="modal-dialog">
+      <div class="modal-content p-3">
+        <div class="modal-header">
+          <h5 id="authTitle" class="modal-title">Đăng nhập</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input id="authName" class="form-control mb-2" placeholder="Tên (khi đăng ký)" />
+          <input id="authEmail" class="form-control mb-2" placeholder="Email" />
+          <input id="authPassword" type="password" class="form-control mb-2" placeholder="Mật khẩu" />
+        </div>
+        <div class="modal-footer">
+          <button id="authSubmit" class="btn btn-primary">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="main.js"></script>
 </body>
 </html>
