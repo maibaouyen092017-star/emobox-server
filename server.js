@@ -85,7 +85,12 @@ app.get("/api/esp/poll/:user", async (req, res) => {
 // === Public thư mục upload & nhạc ===
 app.use("/uploads", express.static("uploads"));
 app.use("/music", express.static("music"));
-
+app.post("/api/listened", async (req, res) => {
+  const { messageId } = req.body;
+  await Message.findByIdAndUpdate(messageId, { listened: true });
+  res.json({ success: true });
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("✅ Server chạy tại cổng", PORT));
+
 
