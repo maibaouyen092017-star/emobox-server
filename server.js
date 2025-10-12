@@ -6,6 +6,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+dotenv.config();
 import path from "path";
 import multer from "multer";
 import schedule from "node-schedule";
@@ -17,7 +18,6 @@ app.use("/api", voiceRoutes);
 // =========================
 // 🔧 Cấu hình cơ bản
 // =========================
-dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -97,4 +97,5 @@ app.post("/api/alarm", (req, res) => {
 // =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+
 
