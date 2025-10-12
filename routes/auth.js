@@ -1,6 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 const router = express.Router();
 
 const userSchema = new mongoose.Schema({
