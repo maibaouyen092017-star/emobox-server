@@ -223,4 +223,36 @@ if (token) {
 
 // initial UI state
 if (!token) showLoggedOut(); else showLoggedIn({ name: "Bạn" });
+// 🧹 Xóa báo thức cũ
+document.getElementById("btnClearAlarms")?.addEventListener("click", async () => {
+  await fetch("/api/clear-alarms", { method: "DELETE" });
+  alert("✅ Đã xóa toàn bộ báo thức cũ!");
+  location.reload();
+});
+
+// ⚙️ Gửi WiFi config
+document.getElementById("btnSendWiFi")?.addEventListener("click", async () => {
+  const ssid = document.getElementById("wifiName").value.trim();
+  const pass = document.getElementById("wifiPass").value.trim();
+  if (!ssid || !pass) return alert("⚠️ Nhập đầy đủ tên và mật khẩu WiFi!");
+
+  await fetch("/api/wifi-config", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ssid, pass })
+  });
+  alert("📡 Cấu hình WiFi đã được gửi đến ESP!");
+});
+
+// 🔔 Khi ESP gửi xác nhận
+async function checkESPStatus() {
+  const res = await fetch("/api/esp-status");
+  const data = await res.json();
+  if (data.heard === true) {
+    const notify = document.getElementById("notify");
+    notify.classList.remove("d-none");
+    setTimeout(() => notify.classList.add("d-none"), 5000);
+  }
+}
+setInterval(checkESPStatus, 5000);
 
