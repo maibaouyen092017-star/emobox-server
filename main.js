@@ -48,7 +48,7 @@ function startRecord(which){
   }
   mode = which; // 'voice' or 'alarm'
   navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-    recorder = new MediaRecorder(stream);
+    recorder = new MediaRecorder(stream, { mimeType: 'audio/mp4' });
     recorder.ondataavailable = e => {
       if(mode==='voice') chunks.push(e.data);
       else chunksAlarm.push(e.data);
