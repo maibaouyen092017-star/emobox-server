@@ -254,5 +254,32 @@ async function checkESPStatus() {
     setTimeout(() => notify.classList.add("d-none"), 5000);
   }
 }
+btnSendRealtime.onclick = async () => {
+  const formData = new FormData();
+  formData.append("voice", recordedBlob, "voice.mp3");
+  formData.append("sender", userName);
+  formData.append("device_id", "esp32_mpgb_01");
+  formData.append("message", titleInput.value || "Tin nhắn realtime");
+
+  const res = await fetch("/api/voice/realtime", { method: "POST", body: formData });
+  const data = await res.json();
+  alert("✅ Đã gửi voice realtime!");
+};
+const eventSource = new EventSource("/api/device/events");
+
+eventSource.onmessage = (e) => {
+  const data = JSON.parse(e.data);
+  if (data.type === "ack") {
+    alert("📩 ESP đã nhận được tin nhắn!");
+  } else if (data.type === "status") {
+    updateDeviceStatus(data.online);
+  }
+};
+
+function updateDeviceStatus(isOnline) {
+  const el = document.getElementById("espStatus");
+  el.innerHTML = isOnline ? "🟢 Thiết bị online" : "🔴 Thiết bị offline";
+}
+
 setInterval(checkESPStatus, 5000);
 
