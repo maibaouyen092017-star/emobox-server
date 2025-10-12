@@ -1,3 +1,4 @@
+const Message = require("./models/Message");
 import express from "express";
 import mongoose from "mongoose";
 import multer from "multer";
@@ -10,6 +11,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static("."));
+// API upload voice
+app.post("/api/upload", upload.single("audio"), async (req, res) => {
+  const newMsg = new Message({
+    email: req.body.email,
+    file: req.file.filename,
+  });
+  await newMsg.save();
+  res.json({ success: true });
+});
+
+// API lấy danh sách tin nhắn theo email người gửi
+app.get("/api/messages", async (req, res) => {
+  const { email } = req.query;
+  const msgs = await Message.find({ email }).sort({ time: -1 });
+  res.json(msgs);
+});
+
+// API ESP báo đã nghe
+app.post("/api/listened", async (req, res) => {
+  const { messageId } = req.body;
+  await Message.findByIdAndUpdate(messageId, { listened: true });
+  res.json({ success: true });
+});
+
 
 // ✅ Kết nối MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -86,11 +111,9 @@ app.get("/api/esp/poll/:user", async (req, res) => {
 app.use("/uploads", express.static("uploads"));
 app.use("/music", express.static("music"));
 app.post("/api/listened", async (req, res) => {
-  const { messageId } = req.body;
-  await Message.findByIdAndUpdate(messageId, { listened: true });
-  res.json({ success: true });
-});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("✅ Server chạy tại cổng", PORT));
+
 
 
