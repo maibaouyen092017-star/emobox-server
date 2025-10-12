@@ -80,6 +80,81 @@
   <footer>
     <p>©2025-Mai Phước Gia Bảo- Dự án khoa học kĩ thuật</p>
   </footer>
+  <script>
+  const recordBtn = document.getElementById("recordBtn");
+  const stopBtn = document.getElementById("stopBtn");
+  const sendBtn = document.getElementById("sendBtn");
+  const audioPreview = document.getElementById("audioPreview");
+
+  let mediaRecorder;
+  let audioChunks = [];
+
+  // ✅ Kiểm tra đăng nhập (ví dụ lưu token trong localStorage)
+  const token = localStorage.getItem("token");
+
+  async function startRecording() {
+    if (!token) {
+      alert("⚠️ Vui lòng đăng nhập để ghi âm!");
+      return;
+    }
+
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: "audio/wav" });
+      const url = URL.createObjectURL(blob);
+      audioPreview.src = url;
+      audioPreview.controls = true;
+      audioPreview.load();
+    };
+
+    audioChunks = [];
+    mediaRecorder.start();
+    recordBtn.disabled = true;
+    stopBtn.disabled = false;
+  }
+
+  function stopRecording() {
+    mediaRecorder.stop();
+    recordBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
+
+  async function sendRecording() {
+    if (!token) {
+      alert("⚠️ Bạn cần đăng nhập để gửi voice!");
+      return;
+    }
+
+    const blob = new Blob(audioChunks, { type: "audio/wav" });
+    const formData = new FormData();
+    formData.append("file", blob, "voice.wav");
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ Đã gửi voice thành công!");
+    } else {
+      alert("❌ Lỗi gửi file: " + data.message);
+    }
+  }
+
+  recordBtn.addEventListener("click", startRecording);
+  stopBtn.addEventListener("click", stopRecording);
+  sendBtn.addEventListener("click", sendRecording);
+</script>
 
   <script defer src="/script.js"></script>
 </body>
