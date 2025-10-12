@@ -4,7 +4,19 @@ body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helv
 h4 { font-weight: 700; }
 #btnStartNow, #btnStartAlarm { border-radius: 12px; padding: 14px; font-size: 1rem; }
 audio { width: 100%; margin-top: 6px; }
-@media (max-width: 767px) {
-  #btnStartNow, #btnStartAlarm { width: 100%; }
-  .card img { width: 100%; }
+@media (max-width: 768px) {
+  .card {
+    margin-bottom: 15px;
+  }
+  button, input, select {
+    font-size: 1rem !important;
+  }
+  audio {
+    width: 100%;
+  }
+  footer {
+    font-size: 0.85rem;
+  }
 }
+}
+
