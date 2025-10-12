@@ -21,7 +21,7 @@
     "dotenv": "^16.4.5"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=18.0.0"
   },
   "keywords": [],
   "author": "Mai Phước Gia Bảo",
