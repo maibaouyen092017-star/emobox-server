@@ -1,41 +1,34 @@
-import express from "express";
-import User from "../models/User.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 const router = express.Router();
 
 // Đăng ký
-router.post("/register", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const userExists = await User.findOne({ username });
-    if (userExists) return res.status(400).json({ msg: "Tài khoản đã tồn tại" });
+router.post('/register', async (req, res) => {
+  const { username, password } = req.body;
+  const existing = await User.findOne({ username });
+  if (existing) return res.json({ success: false, message: 'Tên đăng nhập đã tồn tại' });
 
-    const newUser = new User({ username, password });
-    await newUser.save();
+  const hashed = await bcrypt.hash(password, 10);
+  const newUser = new User({ username, password: hashed });
+  await newUser.save();
 
-    res.json({ msg: "Đăng ký thành công" });
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
+  res.json({ success: true });
 });
 
 // Đăng nhập
-router.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ msg: "Sai tài khoản hoặc mật khẩu" });
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  const user = await User.findOne({ username });
+  if (!user) return res.json({ success: false });
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) return res.status(400).json({ msg: "Sai mật khẩu" });
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.json({ success: false });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
-    res.json({ token, username: user.username });
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  res.json({ success: true, token });
 });
 
 export default router;
