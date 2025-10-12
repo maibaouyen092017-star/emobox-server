@@ -51,16 +51,25 @@
     </div>
   </header>
 
-  <!-- ✅ Modal đăng nhập / đăng ký -->
-  <div id="authModal" class="hidden">
-    <div class="box">
-      <h2 id="authTitle" class="text-xl font-bold mb-4">Đăng nhập</h2>
-      <input type="text" id="authUsername" placeholder="Tên đăng nhập" />
-      <input type="password" id="authPassword" placeholder="Mật khẩu" />
-      <button id="submitAuth" class="bg-blue-600 text-white">Xác nhận</button>
-      <button id="closeAuth">Đóng</button>
-    </div>
+ <!-- Modal đăng nhập / đăng ký -->
+<div id="authModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
+  <div class="bg-white p-6 rounded-xl shadow-lg w-96 text-center">
+    <h2 id="authTitle" class="text-xl font-bold mb-4">Đăng nhập</h2>
+
+    <input type="text" id="authUsername" placeholder="Tên đăng nhập" class="w-full border p-2 mb-3 rounded">
+    <input type="password" id="authPassword" placeholder="Mật khẩu" class="w-full border p-2 mb-3 rounded">
+
+    <button id="submitAuth" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Xác nhận</button>
+    <button id="closeAuth" class="text-gray-600 mt-3 w-full">Đóng</button>
+
+    <!-- 👇 Thêm dòng này để gợi ý chuyển giữa login / register -->
+    <p id="switchAuth" class="mt-4 text-sm text-gray-700">
+      Chưa có tài khoản? 
+      <a href="#" id="switchToRegister" class="text-blue-600 hover:underline">Đăng ký ngay</a>
+    </p>
   </div>
+</div>
+
 
   <main>
     <section class="card">
