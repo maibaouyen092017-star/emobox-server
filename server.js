@@ -12,7 +12,9 @@ app.use(express.json());
 app.use(express.static("."));
 
 // ✅ Kết nối MongoDB
-mongoose.connect(process.env.MONGO_URL || "mongodb://localhost:27017/emobox");
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // === Mô hình dữ liệu ===
 const User = mongoose.model("User", new mongoose.Schema({
@@ -86,3 +88,4 @@ app.use("/music", express.static("music"));
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("✅ Server chạy tại cổng", PORT));
+
