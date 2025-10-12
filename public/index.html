@@ -82,7 +82,7 @@
   </footer>
 <script>
   // =============================
-  // 📦 Xử lý Modal Đăng nhập / Đăng ký
+  // 📦 Modal Đăng nhập / Đăng ký
   // =============================
   const modal = document.getElementById("authModal");
   const loginOpen = document.getElementById("loginOpen");
@@ -104,7 +104,7 @@
   });
 
   // =============================
-  // 🔑 Xử lý nút Đăng nhập / Đăng ký
+  // 🔑 Đăng nhập / Đăng ký
   // =============================
   document.getElementById("loginBtn").onclick = async () => {
     const username = document.getElementById("username").value.trim();
@@ -123,13 +123,15 @@
       if (res.ok) {
         document.getElementById("authMsg").innerText = "✅ Đăng nhập thành công!";
         localStorage.setItem("user", username);
-        setTimeout(() => modal.classList.add("hidden"), 1000);
+        setTimeout(() => {
+          modal.classList.add("hidden");
+          updateUI();
+        }, 1000);
       } else {
-        document.getElementById("authMsg").innerText = "❌ Sai tài khoản hoặc mật khẩu!";
+        document.getElementById("authMsg").innerText = data.message || "❌ Sai tài khoản!";
       }
     } catch (err) {
       document.getElementById("authMsg").innerText = "⚠️ Lỗi máy chủ!";
-      console.error(err);
     }
   };
 
@@ -150,22 +152,62 @@
       if (res.ok) {
         document.getElementById("authMsg").innerText = "✅ Đăng ký thành công!";
       } else {
-        document.getElementById("authMsg").innerText = "⚠️ Tài khoản đã tồn tại!";
+        document.getElementById("authMsg").innerText = data.message || "⚠️ Lỗi đăng ký!";
       }
     } catch (err) {
       document.getElementById("authMsg").innerText = "⚠️ Lỗi máy chủ!";
-      console.error(err);
     }
   };
 
   // =============================
-  // 👤 Hiển thị trạng thái đăng nhập
+  // 🚪 Đăng xuất
   // =============================
-  window.addEventListener("DOMContentLoaded", () => {
+  function logout() {
+    localStorage.removeItem("user");
+    updateUI();
+  }
+
+  // =============================
+  // 👤 Cập nhật giao diện login/logout
+  // =============================
+  function updateUI() {
     const user = localStorage.getItem("user");
+    const headerDiv = document.querySelector("header div");
+    headerDiv.innerHTML = "";
+
     if (user) {
-      document.getElementById("loginOpen").classList.add("hidden");
-      document.getE
+      const hello = document.createElement("span");
+      hello.textContent = `👋 Xin chào, ${user}`;
+      hello.className = "text-white bg-blue-500 px-3 py-1 rounded mr-2";
+
+      const logoutBtn = document.createElement("button");
+      logoutBtn.textContent = "Đăng xuất";
+      logoutBtn.className = "bg-red-500 text-white px-3 py-1 rounded";
+      logoutBtn.onclick = logout;
+
+      headerDiv.appendChild(hello);
+      headerDiv.appendChild(logoutBtn);
+    } else {
+      const loginBtn = document.createElement("button");
+      loginBtn.id = "loginOpen";
+      loginBtn.textContent = "Đăng nhập";
+      loginBtn.className = "bg-blue-500 text-white px-3 py-1 rounded mr-2";
+      loginBtn.onclick = () => modal.classList.remove("hidden");
+
+      const registerBtn = document.createElement("button");
+      registerBtn.id = "registerOpen";
+      registerBtn.textContent = "Đăng ký";
+      registerBtn.className = "bg-green-500 text-white px-3 py-1 rounded";
+      registerBtn.onclick = () => modal.classList.remove("hidden");
+
+      headerDiv.appendChild(loginBtn);
+      headerDiv.appendChild(registerBtn);
+    }
+  }
+
+  // Khi load lại trang
+  window.addEventListener("DOMContentLoaded", updateUI);
+</script>
 
 
   <script defer src="/script.js"></script>
