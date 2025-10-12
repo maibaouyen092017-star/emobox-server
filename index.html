@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>EmoBox – Báo thức giọng nói yêu thương</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>💌 EmoBox</h1>
+    <button id="loginBtn">Đăng nhập</button>
+  </header>
+
+  <section class="hero">
+    <img src="https://images.unsplash.com/photo-1581579188871-8e0a2eaf7b11" alt="family" />
+    <h2>Báo thức giọng nói – Kết nối yêu thương</h2>
+    <p>Gửi lời nhắn đến người thân yêu của bạn, kèm theo tiếng chuông ấm áp!</p>
+  </section>
+
+  <section class="alarm-section">
+    <h3>🎙️ Ghi âm giọng nói cho báo thức</h3>
+    <label>Ngày báo thức:</label>
+    <input type="date" id="alarm-date" required>
+    <label>Giờ báo thức:</label>
+    <input type="time" id="alarm-time" required>
+
+    <div class="record-controls">
+      <button id="startRecord">Bắt đầu ghi âm</button>
+      <button id="stopRecord" disabled>Dừng ghi âm</button>
+      <button id="playAudio" disabled>Nghe lại</button>
+    </div>
+
+    <audio id="preview" controls style="display:none;"></audio>
+    <button id="sendAlarm" disabled>📤 Gửi báo thức</button>
+  </section>
+
+  <footer>❤️ EmoBox – Tình thân trong từng âm thanh</footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
