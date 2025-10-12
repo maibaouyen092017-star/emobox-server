@@ -7,6 +7,21 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- 🔐 Khung đăng nhập / đăng ký -->
+<div id="auth-container" class="auth-box">
+  <h2>Đăng nhập EmoBox</h2>
+  <input type="text" id="username" placeholder="Tên đăng nhập">
+  <input type="password" id="password" placeholder="Mật khẩu">
+  <button id="login-btn">Đăng nhập</button>
+  <p>Chưa có tài khoản? <a href="#" id="register-link">Đăng ký</a></p>
+
+  <div id="register-box" style="display:none;">
+    <input type="text" id="reg-username" placeholder="Tên đăng nhập">
+    <input type="password" id="reg-password" placeholder="Mật khẩu">
+    <button id="register-btn">Đăng ký</button>
+  </div>
+</div>
+
   <header>
     <h2>💗 EmoBox</h2>
     <button id="logoutBtn">Đăng xuất</button>
