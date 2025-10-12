@@ -1,15 +1,16 @@
 {
   "name": "emobox-server",
   "version": "1.0.0",
+  "description": "ESP32 voice alarm web server",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
     "multer": "^1.4.5-lts.1",
-    "mongoose": "^7.8.0"
+    "mongoose": "^7.6.0",
     "dotenv": "^16.4.5"
   }
 }
