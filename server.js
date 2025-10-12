@@ -1,91 +1,98 @@
-// server.js
+// =========================
+// 📦 EMOBOX SERVER (Hoàn chỉnh)
+// =========================
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url";
-import mqtt from "mqtt";
-import schedule from "node-schedule";
 import multer from "multer";
+import schedule from "node-schedule";
+import mqtt from "mqtt";
+import { fileURLToPath } from "url";
 import authRoutes from "./routes/auth.js"; // router đăng nhập / đăng ký
 
+// =========================
+// 🔧 Cấu hình cơ bản
+// =========================
 dotenv.config();
-
-// Tạo ứng dụng express
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use("/auth", authRoutes);
 app.use(express.urlencoded({ extended: true }));
 
-// Định nghĩa __dirname khi dùng ES module
+// =========================
+// 📂 Cấu hình đường dẫn tuyệt đối
+// =========================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Cho phép truy cập logo nằm cùng cấp với server.js
+// =========================
+// 🖼️ Cho phép truy cập logo và thư mục public
+// =========================
 app.use("/logo.jpg", express.static(path.join(__dirname, "logo.jpg")));
-
-// Public folder
 app.use(express.static(path.join(__dirname, "public")));
 
-
-// 🧠 Xác định đường dẫn gốc (dành cho ES module)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// 📁 Cấu hình lưu file upload
-const upload = multer({ dest: path.join(__dirname, "uploads/") });
-
-// 🧩 Kết nối MongoDB
+// =========================
+// 🌐 Kết nối MongoDB
+// =========================
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URL)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
-// 🔑 Routes xác thực
-app.use("/api/auth", authRoutes);
+// =========================
+// 🔑 Đăng nhập / Đăng ký
+// =========================
+app.use("/auth", authRoutes);
 
-// 🔊 Route ghi âm gửi lên
+// =========================
+// 📡 Cấu hình MQTT
+// =========================
+const client = mqtt.connect(process.env.MQTT_BROKER || "mqtt://test.mosquitto.org");
+
+client.on("connect", () => console.log("✅ MQTT Connected"));
+client.on("error", (err) => console.error("❌ MQTT Error:", err));
+
+// =========================
+// 🎙️ Upload file âm thanh
+// =========================
+const upload = multer({ dest: path.join(__dirname, "uploads/") });
+
 app.post("/api/upload", upload.single("audio"), async (req, res) => {
   try {
-    console.log("🎤 File ghi âm nhận được:", req.file.filename);
-    // Gửi thông tin qua MQTT để ESP32 nhận
+    if (!req.file) return res.status(400).json({ success: false, message: "Không có file được gửi lên!" });
+
+    console.log("📁 File âm thanh nhận:", req.file.filename);
     client.publish("emobox/audio", req.file.filename);
-    res.json({ success: true, message: "Đã nhận file ghi âm" });
+
+    res.status(200).json({ success: true, message: "Upload thành công!" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Không thể xử lý file âm thanh" });
+    res.status(500).json({ success: false, message: "Lỗi xử lý file!" });
   }
 });
 
-// 🕒 Route đặt báo thức
+// =========================
+// ⏰ Đặt báo thức bằng giọng nói
+// =========================
 app.post("/api/alarm", (req, res) => {
   const { time, message } = req.body;
-  console.log(`🕒 Đặt báo thức lúc ${time} - ${message}`);
-  schedule.scheduleJob(new Date(time), () => {
-    client.publish("emobox/alarm", message);
-    console.log("🔔 Gửi báo thức đến ESP32!");
+
+  if (!time) return res.status(400).json({ success: false, message: "Thiếu thời gian báo thức!" });
+
+  const date = new Date(time);
+  schedule.scheduleJob(date, () => {
+    client.publish("emobox/alarm", message || "Báo thức!");
+    console.log("⏰ Đã gửi báo thức đến ESP32!");
   });
-  res.json({ success: true });
+
+  res.json({ success: true, message: "Đặt báo thức thành công!" });
 });
 
-// 📦 Cấu hình MQTT (kênh liên lạc với ESP32)
-const MQTT_BROKER = process.env.MQTT_BROKER || "mqtt://test.mosquitto.org";
-const client = mqtt.connect(MQTT_BROKER);
-
-client.on("connect", () => console.log("📡 Kết nối MQTT thành công:", MQTT_BROKER));
-client.on("error", (err) => console.error("⚠️ Lỗi MQTT:", err));
-
-// 🌐 Public giao diện (frontend)
-app.use(express.static(path.join(__dirname, "public")));
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
-
-// 🚀 Khởi động server
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`🚀 Server chạy tại cổng ${PORT}`));
-
-
-
+// =========================
+// 🚀 Chạy server
+// =========================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
