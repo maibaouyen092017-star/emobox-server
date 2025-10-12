@@ -1,16 +1,16 @@
 import express from "express";
 import multer from "multer";
-import VoiceMessage from "../models/VoiceMessage.js";
-import express from "express";
-import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
+import VoiceMessage from "../models/VoiceMessage.js";
 
 const router = express.Router();
 
+// Định nghĩa __dirname cho ES Module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Cấu hình nơi lưu file ghi âm
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, "../uploads"));
@@ -22,53 +22,54 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ✅ Upload voice
+// 🟢 Upload voice (ESP gửi file lên)
 router.post("/upload", upload.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ message: "No file uploaded" });
   console.log("📥 Voice received:", req.file.filename);
-
-  // Gửi tên file sang ESP (MQTT publish)
-  client.publish("emobox/audio", req.file.filename);
   res.json({ message: "Voice uploaded", file: req.file.filename });
 });
 
-export default router;
-
-const router = express.Router();
-
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname)
-});
-const upload = multer({ storage });
-
+// 🟢 Người dùng gửi voice tới thiết bị
 router.post("/send", upload.single("voice"), async (req, res) => {
-  const { sender, device_id, message } = req.body;
-  const file_url = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
-  const voiceMsg = new VoiceMessage({ sender, device_id, message, file_url });
-  await voiceMsg.save();
-  res.json({ msg: "Gửi voice thành công", file_url });
+  try {
+    const { sender, device_id, message } = req.body;
+    const file_url = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+    const voiceMsg = new VoiceMessage({ sender, device_id, message, file_url });
+    await voiceMsg.save();
+    res.json({ msg: "Gửi voice thành công", file_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Lỗi khi gửi voice" });
+  }
 });
-// --- Voice Realtime ---
+
+// 🟢 Voice realtime (gửi nhanh, chưa phát)
 router.post("/realtime", upload.single("voice"), async (req, res) => {
-  const { sender, device_id, message } = req.body;
-  const file_url = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
+  try {
+    const { sender, device_id, message } = req.body;
+    const file_url = `${process.env.BASE_URL}/uploads/${req.file.filename}`;
 
-  const voiceMsg = new VoiceMessage({
-    sender,
-    device_id,
-    message,
-    file_url,
-    played: false
-  });
-  await voiceMsg.save();
+    const voiceMsg = new VoiceMessage({
+      sender,
+      device_id,
+      message,
+      file_url,
+      played: false,
+    });
+    await voiceMsg.save();
 
-  res.json({ msg: "Voice realtime đã gửi", file_url });
+    res.json({ msg: "Voice realtime đã gửi", file_url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Lỗi khi gửi voice realtime" });
+  }
 });
 
-// --- ESP long-poll nhận voice realtime ---
+// 🟢 ESP long-poll nhận voice realtime
 router.get("/wait-voice", async (req, res) => {
   const { device_id } = req.query;
   let attempts = 0;
+
   const checkVoice = async () => {
     const msg = await VoiceMessage.findOne({ device_id, played: false });
     if (msg) {
@@ -77,7 +78,7 @@ router.get("/wait-voice", async (req, res) => {
       return res.json({
         has_voice: true,
         file_url: msg.file_url,
-        message: msg.message
+        message: msg.message,
       });
     } else if (attempts++ < 20) {
       setTimeout(checkVoice, 1000);
@@ -85,6 +86,7 @@ router.get("/wait-voice", async (req, res) => {
       res.json({ has_voice: false });
     }
   };
+
   checkVoice();
 });
 
