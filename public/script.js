@@ -112,3 +112,73 @@ window.deleteAlarm = deleteAlarm;
 
 // ---------- Polling info for debugging ----------
 console.log('EmoBox frontend ready');
+// ==========================
+// 🔐 Đăng nhập / Đăng ký User
+// ==========================
+
+// Nếu có token -> hiển thị giao diện chính, ẩn khung đăng nhập
+const token = localStorage.getItem('token');
+const authBox = document.getElementById('auth-container');
+const mainUI = document.querySelector('.main-ui'); // bao khung EmoBox
+
+if (!token) {
+  authBox.style.display = 'block';
+  mainUI.style.display = 'none';
+} else {
+  authBox.style.display = 'none';
+  mainUI.style.display = 'block';
+}
+
+// Xử lý đăng nhập
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+
+  const res = await fetch('/api/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+
+  if (data.token) {
+    localStorage.setItem('token', data.token);
+    alert('Đăng nhập thành công!');
+    authBox.style.display = 'none';
+    mainUI.style.display = 'block';
+  } else {
+    alert(data.error || 'Sai tài khoản hoặc mật khẩu!');
+  }
+});
+
+// Chuyển qua giao diện đăng ký
+document.getElementById('register-link').addEventListener('click', () => {
+  document.getElementById('register-box').style.display = 'block';
+});
+
+// Xử lý đăng ký
+document.getElementById('register-btn').addEventListener('click', async () => {
+  const username = document.getElementById('reg-username').value;
+  const password = document.getElementById('reg-password').value;
+
+  const res = await fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    alert('Đăng ký thành công! Hãy đăng nhập lại.');
+    document.getElementById('register-box').style.display = 'none';
+  } else {
+    alert(data.error || 'Lỗi khi đăng ký');
+  }
+});
+
+// Nút đăng xuất
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+  localStorage.removeItem('token');
+  location.reload();
+});
+
