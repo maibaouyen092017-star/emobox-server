@@ -7,25 +7,37 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <!-- 🔐 Khung đăng nhập / đăng ký -->
-<div id="auth-container" class="auth-box">
-  <h2>Đăng nhập EmoBox</h2>
-  <input type="text" id="username" placeholder="Tên đăng nhập">
-  <input type="password" id="password" placeholder="Mật khẩu">
-  <button id="login-btn">Đăng nhập</button>
-  <p>Chưa có tài khoản? <a href="#" id="register-link">Đăng ký</a></p>
+ <!-- Thanh điều hướng -->
+<header class="navbar">
+  <div class="logo">❤️ EmoBox</div>
+  <div id="user-info" class="user-info">
+    <button id="loginBtn" class="btn-primary">Đăng nhập</button>
+    <button id="registerBtn" class="btn-outline">Đăng ký</button>
+  </div>
+</header>
 
-  <div id="register-box" style="display:none;">
-    <input type="text" id="reg-username" placeholder="Tên đăng nhập">
-    <input type="password" id="reg-password" placeholder="Mật khẩu">
-    <button id="register-btn">Đăng ký</button>
+<!-- Form Đăng nhập -->
+<div id="login-modal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Đăng nhập EmoBox</h3>
+    <input type="text" id="login-username" placeholder="Tên đăng nhập" />
+    <input type="password" id="login-password" placeholder="Mật khẩu" />
+    <button id="doLogin">Đăng nhập</button>
+    <p>Chưa có tài khoản? <a href="#" id="switchToRegister">Đăng ký</a></p>
   </div>
 </div>
 
-  <header>
-    <h2>💗 EmoBox</h2>
-    <button id="logoutBtn">Đăng xuất</button>
-  </header>
+<!-- Form Đăng ký -->
+<div id="register-modal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Đăng ký tài khoản mới</h3>
+    <input type="text" id="reg-username" placeholder="Tên đăng nhập" />
+    <input type="password" id="reg-password" placeholder="Mật khẩu" />
+    <button id="doRegister">Tạo tài khoản</button>
+    <p>Đã có tài khoản? <a href="#" id="switchToLogin">Đăng nhập</a></p>
+  </div>
+</div>
+
 
   <main>
     <section class="card">
