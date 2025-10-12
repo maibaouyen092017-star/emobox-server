@@ -5,34 +5,30 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs";
-import multer from "multer";
 import mqtt from "mqtt";
 import schedule from "node-schedule";
-import authRoutes from "./routes/auth.js"; // ✅ router đăng nhập / đăng ký
+import multer from "multer";
+import authRoutes from "./routes/auth.js"; // router đăng nhập / đăng ký
 
 dotenv.config();
 
+// Tạo ứng dụng express
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use('/auth', authRoutes);
+app.use("/auth", authRoutes);
 app.use(express.urlencoded({ extended: true }));
-import express from "express";
-import path from "path";
-import { fileURLToPath } from "url";
 
-const app = express();
-
-// Cấu hình đường dẫn tuyệt đối
+// Định nghĩa __dirname khi dùng ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Cho phép truy cập file logo.jpg nằm ngang hàng với server.js
+// Cho phép truy cập logo nằm cùng cấp với server.js
 app.use("/logo.jpg", express.static(path.join(__dirname, "logo.jpg")));
 
-// Hoặc có thể mở public folder như bình thường
+// Public folder
 app.use(express.static(path.join(__dirname, "public")));
+
 
 // 🧠 Xác định đường dẫn gốc (dành cho ES module)
 const __filename = fileURLToPath(import.meta.url);
@@ -90,5 +86,6 @@ app.get("*", (req, res) => {
 // 🚀 Khởi động server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`🚀 Server chạy tại cổng ${PORT}`));
+
 
 
