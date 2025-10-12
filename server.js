@@ -16,6 +16,7 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/auth', authRoutes);
 app.use(express.urlencoded({ extended: true }));
 
 // 🧠 Xác định đường dẫn gốc (dành cho ES module)
@@ -74,3 +75,4 @@ app.get("*", (req, res) => {
 // 🚀 Khởi động server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => console.log(`🚀 Server chạy tại cổng ${PORT}`));
+
