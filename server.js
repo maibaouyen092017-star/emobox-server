@@ -14,11 +14,12 @@ import mqtt from "mqtt";
 import { fileURLToPath } from "url";
 import authRoutes from "./routes/auth.js"; // router đăng nhập / đăng ký
 import voiceRoutes from "./routes/voice.js";
-app.use("/api", voiceRoutes);
+const app = express();
 // =========================
 // 🔧 Cấu hình cơ bản
 // =========================
-const app = express();
+app.use("/api", voiceRoutes);
+app.use("/api", voiceRoutes);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -97,5 +98,6 @@ app.post("/api/alarm", (req, res) => {
 // =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+
 
 
