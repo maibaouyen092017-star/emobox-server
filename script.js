@@ -1,3 +1,17 @@
+<script>
+const API_URL = "https://emobox-server.onrender.com"; // đổi thành link backend của bạn
+let token = localStorage.getItem("token") || null;
+
+// Hàm hỗ trợ gọi API có token
+async function apiFetch(url, options = {}) {
+  if (token) {
+    options.headers = { ...(options.headers || {}), Authorization: `Bearer ${token}` };
+  }
+  const res = await fetch(`${API_URL}${url}`, options);
+  return res.json();
+}
+</script>
+
 let recorder, audioChunks = [];
 
 const startBtn = document.getElementById("startRecord");
