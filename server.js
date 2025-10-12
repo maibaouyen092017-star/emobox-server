@@ -237,3 +237,33 @@ app.get("*", (req, res) => {
 
 // start server
 httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+let lastESPStatus = { heard: false };
+let wifiConfig = {};
+
+app.post("/api/wifi-config", (req, res) => {
+  wifiConfig = req.body;
+  console.log("📶 Nhận WiFi config:", wifiConfig);
+  res.json({ success: true });
+});
+
+app.get("/api/wifi-config", (req, res) => {
+  res.json(wifiConfig);
+});
+
+app.post("/api/confirm", (req, res) => {
+  lastESPStatus.heard = true;
+  console.log("📩 ESP xác nhận đã nghe.");
+  res.json({ ok: true });
+});
+
+app.get("/api/esp-status", (req, res) => {
+  res.json(lastESPStatus);
+  // reset lại để không hiển thị mãi
+  lastESPStatus.heard = false;
+});
+
+app.delete("/api/clear-alarms", async (req, res) => {
+  await Message.deleteMany({ type: "alarm" });
+  res.json({ ok: true });
+});
+
