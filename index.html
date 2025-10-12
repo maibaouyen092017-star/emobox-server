@@ -63,6 +63,25 @@
           </div>
         </div>
       </div>
+      <!-- 🧠 Thêm ngay dưới phần Đặt báo thức -->
+<div class="card mt-4 shadow-sm">
+  <div class="card-body">
+    <h5>⚙️ Cấu hình WiFi cho thiết bị</h5>
+    <p>Khi ESP chưa tìm thấy WiFi, bạn nhập tên & mật khẩu WiFi ở đây để gửi đến thiết bị:</p>
+    <div class="input-group mb-2">
+      <input id="wifiName" type="text" class="form-control" placeholder="Tên WiFi (SSID)">
+    </div>
+    <div class="input-group mb-3">
+      <input id="wifiPass" type="password" class="form-control" placeholder="Mật khẩu WiFi">
+    </div>
+    <button id="btnSendWiFi" class="btn btn-secondary w-100">Gửi cấu hình WiFi đến ESP</button>
+  </div>
+</div>
+
+<!-- 🔔 Thông báo xác nhận -->
+<div id="notify" class="alert alert-success text-center mt-3 d-none">
+  📩 ESP đã nhận và phát xong tin nhắn!
+</div>
 
       <div class="col-12 col-md-6">
         <div class="card shadow-sm p-3">
