@@ -1,21 +1,23 @@
 // =========================
-// 📦 EMOBOX SERVER (Hoàn chỉnh)
+// 📦 EMOBOX SERVER (Chuẩn cho Render)
 // =========================
 
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import dotenv from "dotenv";
-dotenv.config();
 import path from "path";
 import multer from "multer";
 import schedule from "node-schedule";
 import mqtt from "mqtt";
 import { fileURLToPath } from "url";
 import fs from "fs";
+
 import Alarm from "./models/Alarm.js";
 import authRoutes from "./routes/auth.js";
 import voiceRoutes from "./routes/voice.js";
+
+dotenv.config(); // ✅ phải đặt ngay đầu
 
 const app = express();
 
@@ -46,8 +48,10 @@ app.use(express.static(path.join(__dirname, "public")));
 // =========================
 // 🌐 Kết nối MongoDB
 // =========================
-mongoose
-  .connect(process.env.MONGO_URL)
+mongoose.connect(process.env.MONGO_URL, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => console.log("✅ MongoDB Connected"))
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
@@ -84,16 +88,16 @@ app.post("/api/alarms", upload.single("file"), async (req, res) => {
     const fullTime = new Date(`${date}T${time}:00`);
     const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Lưu DB
-    const newAlarm = await Alarm.create({ title, date, time, fileUrl });
+    // ✅ Lưu vào DB
+    const newAlarm = await Alarm.create({ title, date, time, fileUrl, heard: false });
 
-    // Lên lịch gửi đến ESP32
+    // ✅ Lên lịch gửi tới ESP32
     schedule.scheduleJob(fullTime, () => {
-      console.log(`⏰ Đến giờ báo thức: ${title}`);
+      console.log(`⏰ Báo thức đến giờ: ${title}`);
       const payload = JSON.stringify({
         id: newAlarm._id.toString(),
         title,
-        voiceUrl: `${process.env.SERVER_URL}${fileUrl}`,
+        voiceUrl: `${process.env.SERVER_URL}${fileUrl || ""}`,
         musicUrl: `${process.env.SERVER_URL}/music/alarm.mp3`,
       });
       client.publish("emobox/alarm", payload);
@@ -128,7 +132,7 @@ app.delete("/api/alarms/:id", async (req, res) => {
   }
 });
 
-// ✅ Nhận phản hồi “đã nghe” từ ESP32
+// ✅ ESP32 gửi phản hồi “đã nghe báo thức”
 app.post("/api/alarms/heard/:id", async (req, res) => {
   try {
     await Alarm.findByIdAndUpdate(req.params.id, { heard: true });
@@ -140,8 +144,9 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
 });
 
 // =========================
-// 🚀 Chạy server
+// 🚀 Khởi động server
 // =========================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
-
+mongoose.connection.once("open", () => {
+  app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+});
