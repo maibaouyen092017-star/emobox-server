@@ -174,6 +174,14 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+import { exec } from "child_process";
+
+// Sau khi upload file voice:
+exec(`ffmpeg -i ${req.file.path} -ac 1 -ar 16000 -b:a 64k ${req.file.path}_small.mp3`, 
+  (err) => {
+    if (err) console.error("❌ Lỗi nén file:", err);
+    else console.log("✅ Đã nén file giọng nói!");
+});
 
 // =========================
 // 🚀 Khởi động server
@@ -184,3 +192,4 @@ mongoose.connection.once("open", () => {
     console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`)
   );
 });
+
