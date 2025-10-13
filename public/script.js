@@ -1,44 +1,65 @@
-console.log("🎧 EmoBox script loaded!");
+// ============================
+// 🎙️ EmoBox Frontend Script
+// ============================
+console.log("✅ EmoBox script.js loaded");
 
-const API_URL = "https://emobox-server.onrender.com";
-let mediaRecorder;
-let audioChunks = [];
-let recordedBlob = null;
+const API_BASE = "https://emobox-server.onrender.com"; // đổi nếu server khác
 
-// ==========================
-// 🎤 GHI ÂM TIN NHẮN NGAY
-// ==========================
+// --- Refs
 const recordBtn = document.getElementById("recordBtn");
 const stopBtn = document.getElementById("stopBtn");
 const sendBtn = document.getElementById("sendBtn");
 const msgTitle = document.getElementById("msgTitle");
 const audioPlayer = document.getElementById("audioPlayer");
 
-// bắt đầu ghi âm
+const alarmRecordBtn = document.getElementById("alarmRecordBtn");
+const alarmStopBtn = document.getElementById("alarmStopBtn");
+const saveAlarmBtn = document.getElementById("saveAlarmBtn");
+const alarmAudio = document.getElementById("alarmAudio");
+const alarmDate = document.getElementById("alarmDate");
+const alarmTime = document.getElementById("alarmTime");
+const alarmTitle = document.getElementById("alarmTitle");
+const alarmList = document.getElementById("alarmList");
+
+// --- States
+let mediaRecorder, audioChunks = [];
+let alarmRecorder, alarmChunks = [];
+let voiceBlob, alarmBlob;
+
+// -----------------------------
+// 🔊 Helper: Kiểm tra MIME phù hợp
+// -----------------------------
+function getSupportedMime() {
+  const list = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
+  for (const t of list) if (MediaRecorder.isTypeSupported(t)) return t;
+  return "";
+}
+
+// -----------------------------
+// 🎤 Bắt đầu ghi realtime
+// -----------------------------
 recordBtn.addEventListener("click", async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder = new MediaRecorder(stream, { mimeType: getSupportedMime() });
     audioChunks = [];
-
-    mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
     mediaRecorder.onstop = () => {
-      recordedBlob = new Blob(audioChunks, { type: "audio/webm" });
-      audioPlayer.src = URL.createObjectURL(recordedBlob);
-      console.log("✅ Ghi âm xong, có thể nghe lại hoặc gửi.");
+      voiceBlob = new Blob(audioChunks, { type: "audio/webm" });
+      audioPlayer.src = URL.createObjectURL(voiceBlob);
+      console.log("✅ Ghi xong tin nhắn realtime");
     };
-
     mediaRecorder.start();
     recordBtn.disabled = true;
     stopBtn.disabled = false;
-    console.log("🎙️ Đang ghi âm...");
+    console.log("🎙️ Bắt đầu ghi realtime...");
   } catch (err) {
-    alert("Không thể truy cập micro! Kiểm tra quyền truy cập.");
+    alert("Không truy cập được micro!");
     console.error(err);
   }
 });
 
-// dừng ghi âm
+// 🛑 Dừng ghi realtime
 stopBtn.addEventListener("click", () => {
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
@@ -47,64 +68,56 @@ stopBtn.addEventListener("click", () => {
   }
 });
 
-// gửi voice realtime đến server
+// 📤 Gửi tin nhắn realtime tới server
 sendBtn.addEventListener("click", async () => {
-  if (!recordedBlob) return alert("Bạn chưa ghi âm!");
-  const title = msgTitle.value.trim() || "Tin nhắn không tiêu đề";
+  if (!voiceBlob) return alert("Bạn chưa ghi âm tin nhắn!");
+  sendBtn.disabled = true;
 
-  const formData = new FormData();
-  formData.append("file", recordedBlob, `${Date.now()}.webm`);
-  formData.append("title", title);
+  const fd = new FormData();
+  fd.append("voice", voiceBlob, "message.webm");
+  fd.append("title", msgTitle.value || "Tin nhắn mới");
 
   try {
-    const res = await fetch(`${API_URL}/api/upload`, {
-      method: "POST",
-      body: formData,
-    });
+    const res = await fetch(`${API_BASE}/api/upload-voice`, { method: "POST", body: fd });
     const data = await res.json();
     if (data.success) {
-      alert("✅ Đã gửi thành công!");
-      console.log("📡 Server response:", data);
+      alert("📨 Gửi tin nhắn thành công!");
+      console.log("📢 MQTT realtime:", data);
+      voiceBlob = null;
+      audioPlayer.src = "";
+      msgTitle.value = "";
     } else {
-      alert("❌ Gửi thất bại!");
+      alert("Gửi thất bại!");
     }
   } catch (err) {
-    alert("Lỗi kết nối server!");
     console.error(err);
+    alert("Không thể gửi đến server!");
+  } finally {
+    sendBtn.disabled = false;
   }
 });
 
-// ==========================
-// ⏰ GHI ÂM & LƯU BÁO THỨC
-// ==========================
-const alarmRecordBtn = document.getElementById("alarmRecordBtn");
-const alarmStopBtn = document.getElementById("alarmStopBtn");
-const saveAlarmBtn = document.getElementById("saveAlarmBtn");
-const alarmDate = document.getElementById("alarmDate");
-const alarmTime = document.getElementById("alarmTime");
-const alarmTitle = document.getElementById("alarmTitle");
-const alarmAudio = document.getElementById("alarmAudio");
-
-let alarmRecorder, alarmChunks = [], alarmBlob = null;
-
+// -----------------------------
+// ⏰ Ghi âm cho báo thức
+// -----------------------------
 alarmRecordBtn.addEventListener("click", async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    alarmRecorder = new MediaRecorder(stream);
+    alarmRecorder = new MediaRecorder(stream, { mimeType: getSupportedMime() });
     alarmChunks = [];
-
-    alarmRecorder.ondataavailable = (e) => alarmChunks.push(e.data);
+    alarmRecorder.ondataavailable = e => alarmChunks.push(e.data);
     alarmRecorder.onstop = () => {
       alarmBlob = new Blob(alarmChunks, { type: "audio/webm" });
       alarmAudio.src = URL.createObjectURL(alarmBlob);
-      console.log("✅ Đã thu âm báo thức.");
+      console.log("✅ Ghi âm báo thức xong");
     };
-
     alarmRecorder.start();
     alarmRecordBtn.disabled = true;
     alarmStopBtn.disabled = false;
+    console.log("🎧 Bắt đầu ghi báo thức...");
   } catch (err) {
-    alert("Không thể bật micro cho báo thức!");
+    alert("Không truy cập được micro!");
+    console.error(err);
   }
 });
 
@@ -116,50 +129,66 @@ alarmStopBtn.addEventListener("click", () => {
   }
 });
 
+// 💾 Lưu báo thức
 saveAlarmBtn.addEventListener("click", async () => {
-  if (!alarmBlob) return alert("Chưa có file ghi âm!");
-  if (!alarmDate.value || !alarmTime.value) return alert("Thiếu ngày hoặc giờ!");
+  if (!alarmBlob) return alert("Bạn chưa ghi âm báo thức!");
+  if (!alarmDate.value || !alarmTime.value) return alert("Nhập ngày & giờ!");
 
-  const formData = new FormData();
-  formData.append("title", alarmTitle.value.trim() || "Báo thức không tên");
-  formData.append("date", alarmDate.value);
-  formData.append("time", alarmTime.value);
-  formData.append("file", alarmBlob, `${Date.now()}_alarm.webm`);
+  const fd = new FormData();
+  fd.append("voice", alarmBlob, "alarm.webm");
+  fd.append("title", alarmTitle.value || "Báo thức");
+  fd.append("date", alarmDate.value);
+  fd.append("time", alarmTime.value);
 
   try {
-    const res = await fetch(`${API_URL}/api/alarms`, {
-      method: "POST",
-      body: formData,
-    });
+    const res = await fetch(`${API_BASE}/api/alarms`, { method: "POST", body: fd });
     const data = await res.json();
     if (data.success) {
-      alert("✅ Đã lưu báo thức!");
+      alert("⏰ Đã lưu báo thức!");
+      alarmBlob = null;
+      alarmAudio.src = "";
+      alarmTitle.value = "";
       loadAlarms();
-    } else {
-      alert("❌ Lỗi khi lưu báo thức!");
-    }
+    } else alert("Không thể lưu báo thức!");
   } catch (err) {
     console.error(err);
-    alert("Lỗi server khi lưu báo thức!");
+    alert("Lỗi khi lưu báo thức!");
   }
 });
 
-// ==========================
-// 📋 HIỂN THỊ DANH SÁCH
-// ==========================
+// -----------------------------
+// 📋 Lấy danh sách báo thức
+// -----------------------------
 async function loadAlarms() {
   try {
-    const res = await fetch(`${API_URL}/api/alarms`);
-    const alarms = await res.json();
-    const list = document.getElementById("alarmList");
-    list.innerHTML = alarms.map(a => `
+    const res = await fetch(`${API_BASE}/api/alarms`);
+    const list = await res.json();
+    alarmList.innerHTML = list.map(a => `
       <div class="alarm">
-        <b>${a.title}</b> - ${a.date} ${a.time}
-        ${a.fileUrl ? `<audio controls src="${API_URL + a.fileUrl}"></audio>` : ""}
+        <b>${a.title}</b> — ${a.date} ${a.time}
+        ${a.fileUrl ? `<audio controls src="${API_BASE}${a.fileUrl}"></audio>` : ""}
+        <button onclick="deleteAlarm('${a._id}')">🗑️ Xóa</button>
       </div>
     `).join("");
   } catch (err) {
-    console.error("Lỗi tải báo thức:", err);
+    alarmList.innerHTML = "<i>Không thể tải danh sách</i>";
+    console.error(err);
   }
 }
-window.addEventListener("load", loadAlarms);
+
+// 🗑️ Xóa báo thức
+window.deleteAlarm = async (id) => {
+  if (!confirm("Xóa báo thức này?")) return;
+  await fetch(`${API_BASE}/api/alarms/${id}`, { method: "DELETE" });
+  loadAlarms();
+};
+
+// -----------------------------
+// 🚀 Khi trang tải xong
+// -----------------------------
+window.addEventListener("load", () => {
+  stopBtn.disabled = true;
+  alarmStopBtn.disabled = true;
+  loadAlarms();
+  console.log("🎉 UI đã sẵn sàng");
+});
