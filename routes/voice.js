@@ -89,5 +89,25 @@ router.get("/wait-voice", async (req, res) => {
 
   checkVoice();
 });
+import { mixAudio } from "./utils/mixAudio.js";  // thêm dòng này trên đầu file
+
+// Trong đoạn POST /api/alarms:
+const voiceFilePath = path.join(process.cwd(), "uploads", req.file.filename);
+const musicFilePath = path.join(process.cwd(), "music", "alarm.mp3");
+
+// Gọi mixAudio
+const mixedUrl = await mixAudio(
+  voiceFilePath,
+  musicFilePath,
+  `mixed_${newAlarm._id}`
+);
+
+// Gửi MQTT cho ESP32
+const payload = JSON.stringify({
+  id: newAlarm._id.toString(),
+  title,
+  mixedUrl: `${process.env.SERVER_URL}${mixedUrl}`
+});
+client.publish("emobox/alarm", payload);
 
 export default router;
