@@ -1,107 +1,171 @@
-// =============================
-// 🎙️ EMOBOX CLIENT (Web) — Thu âm, gửi trực tiếp, hẹn giờ
-// =============================
+// ==============================
+// 📡 Cấu hình chung
+// ==============================
+const API_URL = "https://emobox-server.onrender.com";
+const MQTT_TOPIC = "emobox/alarm";
 
-const API_BASE = "https://emobox-server.onrender.com"; // 🔗 URL server backend
-let mediaRecorder, audioChunks = [], audioBlob = null;
+// ==============================
+// 🎙️ Biến ghi âm & xử lý
+// ==============================
+let mediaRecorder;
+let audioChunks = [];
+let currentBlob = null;
 
-// =============================
-// 🎧 Ghi âm & xem trước
-// =============================
-document.getElementById("recordBtn").addEventListener("click", async () => {
+// 🎤 Ghi âm realtime
+const recordBtn = document.getElementById("recordBtn");
+const stopBtn = document.getElementById("stopBtn");
+const sendBtn = document.getElementById("sendBtn");
+const audioPlayer = document.getElementById("audioPlayer");
+const msgTitle = document.getElementById("msgTitle");
+
+// ⏰ Ghi âm báo thức
+const alarmRecordBtn = document.getElementById("alarmRecordBtn");
+const alarmStopBtn = document.getElementById("alarmStopBtn");
+const alarmAudio = document.getElementById("alarmAudio");
+const saveAlarmBtn = document.getElementById("saveAlarmBtn");
+const alarmDate = document.getElementById("alarmDate");
+const alarmTime = document.getElementById("alarmTime");
+const alarmTitle = document.getElementById("alarmTitle");
+
+// ==============================
+// 🔊 Hàm bắt đầu ghi âm
+// ==============================
+async function startRecording(type = "message") {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+
     mediaRecorder.onstop = () => {
-      audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-      const url = URL.createObjectURL(audioBlob);
-      const audio = document.getElementById("audioPreview");
-      audio.src = url;
-      audio.controls = true;
-      document.getElementById("status").innerText = "🎧 Ghi âm xong!";
+      currentBlob = new Blob(audioChunks, { type: "audio/webm" });
+      const audioURL = URL.createObjectURL(currentBlob);
+      if (type === "message") audioPlayer.src = audioURL;
+      else alarmAudio.src = audioURL;
     };
 
     mediaRecorder.start();
-    document.getElementById("status").innerText = "🎙️ Đang ghi âm...";
+    console.log("🎙️ Bắt đầu ghi âm...");
   } catch (err) {
-    alert("❌ Không thể truy cập micro: " + err.message);
+    alert("Không thể truy cập micro!");
+    console.error(err);
   }
-});
+}
 
-document.getElementById("stopBtn").addEventListener("click", () => {
+// 🛑 Dừng ghi âm
+function stopRecording() {
   if (mediaRecorder && mediaRecorder.state !== "inactive") {
     mediaRecorder.stop();
-    document.getElementById("status").innerText = "🛑 Dừng ghi âm...";
+    console.log("⏹️ Dừng ghi âm.");
   }
-});
+}
 
-// =============================
-// ⚡ Gửi ngay (realtime tới ESP32 qua server)
-// =============================
-document.getElementById("sendNowBtn").addEventListener("click", async () => {
-  if (!audioBlob) return alert("⚠️ Bạn cần ghi âm trước khi gửi!");
+// ==============================
+// 📤 Gửi tin nhắn realtime
+// ==============================
+sendBtn.addEventListener("click", async () => {
+  if (!currentBlob) return alert("Bạn chưa ghi âm!");
+  const token = localStorage.getItem("token");
+  if (!token) return alert("Vui lòng đăng nhập trước!");
 
-  const fd = new FormData();
-  fd.append("file", audioBlob, "voice.webm");
-
-  document.getElementById("status").innerText = "🚀 Đang gửi âm thanh...";
+  const formData = new FormData();
+  formData.append("voice", currentBlob, "message.webm");
+  formData.append("title", msgTitle.value || "Tin nhắn mới");
 
   try {
-    const res = await fetch(`${API_BASE}/api/upload-voice`, {
+    const res = await fetch(`${API_URL}/api/upload-voice`, {
       method: "POST",
-      body: fd,
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
     });
     const data = await res.json();
 
     if (data.success) {
-      document.getElementById("status").innerText = "✅ Gửi thành công!";
+      alert("✅ Gửi thành công!");
+      currentBlob = null;
+      msgTitle.value = "";
+      audioPlayer.src = "";
     } else {
-      document.getElementById("status").innerText =
-        "❌ Gửi thất bại: " + data.message;
+      alert("⚠️ Lỗi khi gửi tin nhắn!");
     }
   } catch (err) {
+    alert("❌ Không thể kết nối server!");
     console.error(err);
-    document.getElementById("status").innerText = "⚠️ Lỗi kết nối server!";
   }
 });
 
-// =============================
-// ⏰ Hẹn giờ gửi báo thức (voice + MQTT)
-// =============================
-document.getElementById("scheduleBtn").addEventListener("click", async () => {
-  const title = document.getElementById("title").value || "Báo thức không tên";
-  const date = document.getElementById("date").value;
-  const time = document.getElementById("time").value;
+// ==============================
+// 💾 Lưu báo thức giọng nói
+// ==============================
+saveAlarmBtn.addEventListener("click", async () => {
+  if (!currentBlob) return alert("Bạn chưa ghi âm cho báo thức!");
+  const token = localStorage.getItem("token");
+  if (!token) return alert("Vui lòng đăng nhập!");
 
-  if (!date || !time) return alert("⚠️ Vui lòng chọn ngày và giờ!");
-  if (!audioBlob) return alert("⚠️ Hãy ghi âm trước khi hẹn giờ!");
-
-  const fd = new FormData();
-  fd.append("title", title);
-  fd.append("date", date);
-  fd.append("time", time);
-  fd.append("file", audioBlob, "voice.webm");
-
-  document.getElementById("status").innerText = "🕒 Đang tạo báo thức...";
+  const formData = new FormData();
+  formData.append("voice", currentBlob, "alarm.webm");
+  formData.append("title", alarmTitle.value || "Báo thức");
+  formData.append("date", alarmDate.value);
+  formData.append("time", alarmTime.value);
 
   try {
-    const res = await fetch(`${API_BASE}/api/alarms`, {
+    const res = await fetch(`${API_URL}/api/alarms`, {
       method: "POST",
-      body: fd,
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
     });
     const data = await res.json();
 
     if (data.success) {
-      document.getElementById("status").innerText =
-        "✅ Đặt báo thức thành công!";
+      alert("✅ Đã lưu báo thức!");
+      alarmTitle.value = "";
+      alarmDate.value = "";
+      alarmTime.value = "";
+      alarmAudio.src = "";
     } else {
-      document.getElementById("status").innerText =
-        "❌ Lỗi: " + (data.message || "Không thể tạo báo thức!");
+      alert("⚠️ Không thể lưu báo thức!");
     }
   } catch (err) {
-    document.getElementById("status").innerText = "⚠️ Lỗi kết nối server!";
+    alert("❌ Lỗi kết nối server!");
+    console.error(err);
   }
 });
+
+// ==============================
+// 🔗 Gán sự kiện nút
+// ==============================
+recordBtn.onclick = () => startRecording("message");
+stopBtn.onclick = stopRecording;
+alarmRecordBtn.onclick = () => startRecording("alarm");
+alarmStopBtn.onclick = stopRecording;
+
+// ==============================
+// 🔔 Tự động tải danh sách báo thức
+// ==============================
+async function loadAlarms() {
+  const token = localStorage.getItem("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch(`${API_URL}/api/alarms`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+
+    const list = document.getElementById("alarmList");
+    list.innerHTML = "";
+    data.forEach((a) => {
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <p>🕒 <b>${a.title}</b> - ${a.date} ${a.time}</p>
+        <audio controls src="${a.voiceUrl}"></audio>
+      `;
+      list.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Không thể tải báo thức:", err);
+  }
+}
+
+window.addEventListener("load", loadAlarms);
