@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EmoBox</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmoBox - Gắn kết yêu thương</title>
+  <link rel="stylesheet" href="style.css" />
+
   <style>
-    /* Nếu bạn không dùng Tailwind, thêm CSS ẩn/hiện cơ bản */
     .hidden { display: none; }
+
+    /* Modal nền */
     #authModal {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(0, 0, 0, 0.5);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -22,26 +24,71 @@
       padding: 20px;
       border-radius: 12px;
       width: 350px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     }
     #authModal input {
       width: 100%;
       padding: 8px;
       margin: 6px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
     #authModal button {
       width: 100%;
       margin-top: 8px;
       padding: 8px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #authModal button:hover {
+      opacity: 0.9;
+    }
+    header.navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0052cc;
+      color: white;
+      padding: 10px 20px;
+    }
+    header .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    header .logo img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    .user-info button {
+      margin-left: 8px;
+      padding: 6px 12px;
+      border-radius: 6px;
+    }
+    .btn-primary {
+      background: #fff;
+      color: #0052cc;
+      border: none;
+    }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid white;
+      color: white;
+    }
+    .btn-gray {
+      background: #eee;
+      color: #333;
+      border: none;
     }
   </style>
 </head>
 <body>
-
-  <!-- ✅ Thanh điều hướng -->
+  <!-- 🟦 Thanh điều hướng -->
   <header class="navbar">
     <div class="logo">
-      <img src="/logo.jpg" alt="Logo" class="logo-img">
+      <img src="/logo.jpg" alt="Logo" />
       <span>EmoBox - Gắn kết yêu thương</span>
     </div>
     <div id="user-info" class="user-info">
@@ -51,44 +98,40 @@
     </div>
   </header>
 
- <!-- Modal đăng nhập / đăng ký -->
-<div id="authModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center z-50">
-  <div class="bg-white p-6 rounded-xl shadow-lg w-96 text-center">
-    <h2 id="authTitle" class="text-xl font-bold mb-4">Đăng nhập</h2>
-
-    <input type="text" id="authUsername" placeholder="Tên đăng nhập" class="w-full border p-2 mb-3 rounded">
-    <input type="password" id="authPassword" placeholder="Mật khẩu" class="w-full border p-2 mb-3 rounded">
-
-    <button id="submitAuth" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Xác nhận</button>
-    <button id="closeAuth" class="text-gray-600 mt-3 w-full">Đóng</button>
-
-    <!-- 👇 Thêm dòng này để gợi ý chuyển giữa login / register -->
-    <p id="switchAuth" class="mt-4 text-sm text-gray-700">
-      Chưa có tài khoản? 
-      <a href="#" id="switchToRegister" class="text-blue-600 hover:underline">Đăng ký ngay</a>
-    </p>
+  <!-- 🔒 Modal đăng nhập / đăng ký -->
+  <div id="authModal" class="hidden">
+    <div class="box">
+      <h2 id="authTitle">Đăng nhập</h2>
+      <input type="text" id="authUsername" placeholder="Tên đăng nhập" />
+      <input type="password" id="authPassword" placeholder="Mật khẩu" />
+      <button id="submitAuth" style="background:#0052cc;color:white;">Xác nhận</button>
+      <button id="closeAuth" style="background:#ccc;">Đóng</button>
+      <p id="switchAuth" style="margin-top:12px;font-size:14px;">
+        Chưa có tài khoản?
+        <a href="#" id="switchToRegister" style="color:#0052cc;text-decoration:underline;">Đăng ký ngay</a>
+      </p>
+    </div>
   </div>
-</div>
 
-
-  <main>
+  <!-- 🧠 Nội dung chính -->
+  <main style="padding: 20px;">
     <section class="card">
       <h3>🎤 Gửi lời nhắn ngay (Realtime)</h3>
-      <button id="recordBtn" class="red">🎙️ Ghi âm ngay</button>
-      <button id="stopBtn" class="gray">⏹️ Dừng</button>
-      <input id="msgTitle" placeholder="Tiêu đề (ví dụ: Lời chúc)">
-      <button id="sendBtn" class="green">📤 Gửi ngay</button>
+      <button id="recordBtn">🎙️ Ghi âm ngay</button>
+      <button id="stopBtn">⏹️ Dừng</button>
+      <input id="msgTitle" placeholder="Tiêu đề (ví dụ: Lời chúc)" />
+      <button id="sendBtn">📤 Gửi ngay</button>
       <audio id="audioPlayer" controls></audio>
     </section>
 
     <section class="card">
       <h3>⏰ Đặt báo thức bằng giọng nói</h3>
-      <input id="alarmDate" type="date">
-      <input id="alarmTime" type="time">
-      <input id="alarmTitle" placeholder="Tên báo thức (VD: Ăn sáng)">
-      <button id="alarmRecordBtn" class="yellow">🎙️ Ghi âm cho báo thức</button>
-      <button id="alarmStopBtn" class="gray">⏹️ Dừng</button>
-      <button id="saveAlarmBtn" class="blue">💾 Lưu báo thức</button>
+      <input id="alarmDate" type="date" />
+      <input id="alarmTime" type="time" />
+      <input id="alarmTitle" placeholder="Tên báo thức (VD: Ăn sáng)" />
+      <button id="alarmRecordBtn">🎙️ Ghi âm cho báo thức</button>
+      <button id="alarmStopBtn">⏹️ Dừng</button>
+      <button id="saveAlarmBtn">💾 Lưu báo thức</button>
       <audio id="alarmAudio" controls></audio>
     </section>
 
@@ -100,97 +143,118 @@
     <section class="card">
       <h3>📘 Hướng dẫn sử dụng</h3>
       <p>
-        - Ghi âm và gửi tin nhắn: chọn "Gửi lời nhắn ngay", thu âm, nghe lại và gửi.<br>
-        - Đặt báo thức bằng giọng nói: chọn ngày, giờ, ghi âm lời nhắc.<br>
-        - ESP sẽ phát lại tin nhắn/báo thức khi đến giờ.<br>
+        - Ghi âm và gửi tin nhắn: chọn "Gửi lời nhắn ngay", thu âm, nghe lại và gửi.<br />
+        - Đặt báo thức bằng giọng nói: chọn ngày, giờ, ghi âm lời nhắc.<br />
+        - ESP sẽ phát lại tin nhắn/báo thức khi đến giờ.<br />
         - Cần đăng nhập để lưu lịch sử và gửi voice.
       </p>
     </section>
   </main>
 
-  <footer>
-    <p>©2025 - Mai Phước Gia Bảo - Dự án khoa học kỹ thuật</p>
+  <footer style="text-align:center;padding:20px;color:#555;">
+    ©2025 - Mai Phước Gia Bảo - Dự án khoa học kỹ thuật
   </footer>
 
-  <!-- ✅ Script xử lý đăng nhập / đăng ký -->
+  <!-- 🧠 Script xử lý đăng nhập / đăng ký -->
   <script>
-  const API_URL = "https://emobox-server.onrender.com";
+    const API_URL = "https://emobox-server.onrender.com";
 
-  const loginBtn = document.getElementById("loginBtn");
-  const registerBtn = document.getElementById("registerBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const modal = document.getElementById("authModal");
-  const authTitle = document.getElementById("authTitle");
-  const username = document.getElementById("authUsername");
-  const password = document.getElementById("authPassword");
-  const submitAuth = document.getElementById("submitAuth");
-  const closeAuth = document.getElementById("closeAuth");
+    const loginBtn = document.getElementById("loginBtn");
+    const registerBtn = document.getElementById("registerBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const modal = document.getElementById("authModal");
+    const authTitle = document.getElementById("authTitle");
+    const username = document.getElementById("authUsername");
+    const password = document.getElementById("authPassword");
+    const submitAuth = document.getElementById("submitAuth");
+    const closeAuth = document.getElementById("closeAuth");
+    const switchLink = document.getElementById("switchToRegister");
 
-  let currentMode = "login"; // login / register
+    let currentMode = "login"; // login / register
 
-  // mở form đăng nhập
-  loginBtn.addEventListener("click", () => {
-    modal.classList.remove("hidden");
-    authTitle.textContent = "Đăng nhập";
-    currentMode = "login";
-  });
+    // 🟢 Mở form đăng nhập
+    loginBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+      authTitle.textContent = "Đăng nhập";
+      currentMode = "login";
+      switchLink.textContent = "Đăng ký ngay";
+    });
 
-  // mở form đăng ký
-  registerBtn.addEventListener("click", () => {
-    modal.classList.remove("hidden");
-    authTitle.textContent = "Đăng ký";
-    currentMode = "register";
-  });
+    // 🟢 Mở form đăng ký
+    registerBtn.addEventListener("click", () => {
+      modal.classList.remove("hidden");
+      authTitle.textContent = "Đăng ký";
+      currentMode = "register";
+      switchLink.textContent = "Đăng nhập ngay";
+    });
 
-  // đóng modal
-  closeAuth.addEventListener("click", () => modal.classList.add("hidden"));
+    // 🔄 Chuyển giữa login/register
+    switchLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (currentMode === "login") {
+        currentMode = "register";
+        authTitle.textContent = "Đăng ký";
+        switchLink.textContent = "Đăng nhập ngay";
+      } else {
+        currentMode = "login";
+        authTitle.textContent = "Đăng nhập";
+        switchLink.textContent = "Đăng ký ngay";
+      }
+    });
 
-  // gửi dữ liệu
-  submitAuth.addEventListener("click", async () => {
-    const body = {
-      username: username.value.trim(),
-      password: password.value.trim(),
-    };
-    if (!body.username || !body.password) {
-      alert("Vui lòng nhập đầy đủ thông tin!");
-      return;
-    }
+    // ❌ Đóng modal
+    closeAuth.addEventListener("click", () => modal.classList.add("hidden"));
 
-    const endpoint = currentMode === "login" ? "/auth/login" : "/auth/register";
+    // 📤 Gửi form đăng nhập / đăng ký
+    submitAuth.addEventListener("click", async () => {
+      const body = {
+        username: username.value.trim(),
+        password: password.value.trim(),
+      };
+      if (!body.username || !body.password) return alert("Vui lòng nhập đầy đủ!");
 
-    try {
-      const res = await fetch(API_URL + endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json();
+      const endpoint = currentMode === "login" ? "/auth/login" : "/auth/register";
+      try {
+        const res = await fetch(API_URL + endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const data = await res.json();
 
-      if (data.success) {
-        alert(currentMode === "login" ? "Đăng nhập thành công!" : "Đăng ký thành công!");
-        modal.classList.add("hidden");
-        localStorage.setItem("token", data.token || "");
+        if (data.success) {
+          alert(currentMode === "login" ? "Đăng nhập thành công!" : "Đăng ký thành công!");
+          modal.classList.add("hidden");
+          localStorage.setItem("token", data.token || "");
+          loginBtn.classList.add("hidden");
+          registerBtn.classList.add("hidden");
+          logoutBtn.classList.remove("hidden");
+        } else {
+          alert(data.message || "Sai tài khoản hoặc mật khẩu!");
+        }
+      } catch (err) {
+        alert("Không thể kết nối server!");
+        console.error(err);
+      }
+    });
+
+    // 🚪 Đăng xuất
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("token");
+      alert("Đã đăng xuất!");
+      logoutBtn.classList.add("hidden");
+      loginBtn.classList.remove("hidden");
+      registerBtn.classList.remove("hidden");
+    });
+
+    // ✅ Kiểm tra token khi tải trang
+    window.addEventListener("load", () => {
+      if (localStorage.getItem("token")) {
         loginBtn.classList.add("hidden");
         registerBtn.classList.add("hidden");
         logoutBtn.classList.remove("hidden");
-      } else {
-        alert(data.message || "Có lỗi xảy ra!");
       }
-    } catch (err) {
-      console.error(err);
-      alert("Không thể kết nối server!");
-    }
-  });
-
-  // đăng xuất
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("token");
-    alert("Đã đăng xuất!");
-    logoutBtn.classList.add("hidden");
-    loginBtn.classList.remove("hidden");
-    registerBtn.classList.remove("hidden");
-  });
+    });
   </script>
-
 </body>
 </html>
