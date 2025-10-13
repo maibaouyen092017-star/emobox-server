@@ -107,5 +107,15 @@ footer{text-align:center;padding:14px;color:#666;margin-top:auto;background:#fff
   width: auto;
   border-radius: 6px;
 }
+.hidden { display: none; }
+.modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex; justify-content: center; align-items: center;
+}
+.modal-content {
+  background: white; padding: 20px; border-radius: 10px;
+  min-width: 300px; text-align: center;
+}
 
 
