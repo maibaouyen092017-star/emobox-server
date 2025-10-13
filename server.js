@@ -133,9 +133,14 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
     if (!date || !time)
       return res.status(400).json({ success: false, message: "Thiếu ngày giờ!" });
 
-    const fileUrl = req.file
-      ? `${process.env.SERVER_URL}/uploads/${req.file.filename}`
-      : null;
+   let fileUrl = null;
+if (req.file) {
+  const inputPath = path.join(__dirname, "uploads", req.file.filename);
+  const outputPath = await compressAudio(inputPath);
+
+  // Lấy đường dẫn public sau khi nén
+  fileUrl = "/uploads/" + path.basename(outputPath);
+}
 
     const newAlarm = await Alarm.create({
       title,
@@ -203,5 +208,6 @@ mongoose.connection.once("open", () => {
     console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`)
   );
 });
+
 
 
