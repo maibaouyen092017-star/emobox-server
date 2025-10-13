@@ -1,5 +1,5 @@
-// script.js - EmoBox frontend
-const API_BASE = window.location.origin; // deploy cùng domain
+// ================== EmoBox Frontend ==================
+const API_BASE = window.location.origin;
 let mediaRecorder, alarmRecorder;
 let chunks = [], alarmChunks = [];
 let audioBlob = null, alarmBlob = null;
@@ -53,7 +53,7 @@ document.getElementById("sendBtn").onclick = async () => {
   });
   if (res.ok) {
     alert("Đã gửi realtime");
-    loadMessages();
+    loadAlarms();
     audioBlob = null;
     document.getElementById("audioPlayer").src = "";
   } else alert("Gửi thất bại");
@@ -87,71 +87,47 @@ document.getElementById("saveAlarmBtn").onclick = async () => {
 
   const res = await fetch(`${API_BASE}/api/alarms`, { method: "POST", body: fd });
   if (res.ok) {
-    alert("Đã lưu báo thức");
-    loadMessages();
+    alert("✅ Đã lưu báo thức");
     alarmBlob = null;
     document.getElementById("alarmAudio").src = "";
-  } else alert("Lưu thất bại");
+    loadAlarms();
+  } else alert("❌ Lưu thất bại");
 };
 
-// ---------- Load messages ----------
-async function loadMessages() {
-  const res = await fetch(`${API_BASE}/api/messages`);
-  if (!res.ok) return;
-  const data = await res.json();
-  const list = document.getElementById("messageList");
-  list.innerHTML = "";
-  data.forEach(m => {
-    const div = document.createElement("div");
-    div.className = "msg";
-    div.innerHTML = `
-      <b>${escapeHtml(m.title)}</b>
-      <div class="meta">${new Date(m.createdAt).toLocaleString()} • ${m.type}</div>
-      ${m.fileUrl ? `<audio controls src="${m.fileUrl}"></audio>` : ""}
-      ${m.type === "alarm" ? `<button onclick="deleteAlarm('${m._id}')">❌ Xóa</button>` : ""}
-      <div><small>Trạng thái: ${m.heard ? "Đã nghe" : "Chưa nghe"}</small></div>
-    `;
-    list.appendChild(div);
-  });
-}
-function escapeHtml(s) {
-  return (s || "").replace(/[&<>"]/g, c => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-  })[c]);
-}
-window.onload = loadMessages;
-
-async function deleteAlarm(id) {
-  if (!confirm("Xóa báo thức?")) return;
-  const res = await fetch(`${API_BASE}/api/alarms/${id}`, { method: "DELETE" });
-  if (res.ok) loadMessages();
-  else alert("Xóa thất bại");
-}
-window.deleteAlarm = deleteAlarm;
-// 🔔 Lấy danh sách báo thức đã lưu và hiển thị
+// ---------- Hiển thị danh sách báo thức ----------
 async function loadAlarms() {
   const listContainer = document.getElementById("alarmList");
   if (!listContainer) return;
 
-  const res = await fetch("https://emobox-server.onrender.com/api/alarms");
-  const alarms = await res.json();
+  const res = await fetch(`${API_BASE}/api/alarms`);
+  if (!res.ok) return;
 
-  listContainer.innerHTML = alarms
-    .map(
-      (a) => `
-        <div class="alarm-item">
-          <b>${a.title || "Không tiêu đề"}</b><br>
-          📅 ${a.date} 🕒 ${a.time}<br>
-          🔊 <audio controls src="${a.fileUrl}" style="width: 200px"></audio>
-        </div>
-      `
-    )
-    .join("");
+  const alarms = await res.json();
+  listContainer.innerHTML = "";
+
+  alarms.forEach(a => {
+    const div = document.createElement("div");
+    div.className = "alarm-item";
+    div.innerHTML = `
+      <div>
+        <b>${a.title}</b> - 📅 ${a.date} 🕒 ${a.time}<br>
+        🔊 ${a.fileUrl ? `<audio controls src="${a.fileUrl}" style="width:200px"></audio>` : ""}
+        <br>Trạng thái: ${a.heard ? "✅ Đã nghe" : "⏰ Chưa nghe"}
+      </div>
+      <button class="delete-btn" data-id="${a._id}">❌ Xóa</button>
+    `;
+    listContainer.appendChild(div);
+  });
+
+  document.querySelectorAll(".delete-btn").forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      if (!confirm("Xóa báo thức này?")) return;
+      await fetch(`${API_BASE}/api/alarms/${id}`, { method: "DELETE" });
+      loadAlarms();
+    };
+  });
 }
 
-// Gọi khi load trang
 window.addEventListener("load", loadAlarms);
-
+console.log("✅ EmoBox frontend loaded");
