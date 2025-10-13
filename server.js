@@ -11,6 +11,8 @@ import schedule from "node-schedule";
 import mqtt from "mqtt";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import { exec } from "child_process";
+import ffmpegPath from "@ffmpeg-installer/ffmpeg"; // ✅ dùng ffmpeg nội bộ
 
 import Alarm from "./models/Alarm.js";
 import authRoutes from "./routes/auth.js";
@@ -80,17 +82,16 @@ client.on("error", (err) => console.error("❌ MQTT Error:", err));
 // 🎙️ Upload voice realtime
 // =========================
 const upload = multer({ dest: path.join(__dirname, "uploads/") });
-import { exec } from "child_process";
 
-// 🔉 Hàm tự động nén file MP3 về dạng nhẹ, phù hợp ESP32
+// 🔉 Nén file MP3 gọn nhẹ cho ESP32
 async function compressAudio(inputPath) {
   return new Promise((resolve, reject) => {
     const outputPath = inputPath.replace(/\.mp3$/, "_small.mp3");
-    const cmd = `ffmpeg -y -i "${inputPath}" -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
+    const cmd = `"${ffmpegPath.path}" -y -i "${inputPath}" -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
 
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
-        console.error("❌ Lỗi nén file âm thanh:", error);
+        console.error("❌ Lỗi nén file âm thanh:", stderr);
         reject(error);
       } else {
         console.log("✅ Đã nén file âm thanh:", outputPath);
@@ -100,20 +101,22 @@ async function compressAudio(inputPath) {
   });
 }
 
-// ✅ Upload file realtime (tin nhắn gửi ngay)
+// ✅ Upload voice realtime
 app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
   try {
     if (!req.file)
       return res.status(400).json({ success: false, message: "Không có file ghi âm!" });
 
-    const fileUrl = `${process.env.SERVER_URL}/uploads/${req.file.filename}`;
+    const inputPath = path.join(__dirname, "uploads", req.file.filename);
+    const outputPath = await compressAudio(inputPath);
+    const fileUrl = `${process.env.SERVER_URL}/uploads/${path.basename(outputPath)}`;
+
     const payload = JSON.stringify({
       id: new Date().getTime().toString(),
       voiceUrl: fileUrl,
       title: req.body.title || "Tin nhắn mới",
     });
 
-    // ✅ Gửi tới ESP32 qua MQTT
     client.publish("emobox/alarm", payload);
     console.log("📢 Gửi MQTT realtime:", payload);
 
@@ -133,14 +136,12 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
     if (!date || !time)
       return res.status(400).json({ success: false, message: "Thiếu ngày giờ!" });
 
-   let fileUrl = null;
-if (req.file) {
-  const inputPath = path.join(__dirname, "uploads", req.file.filename);
-  const outputPath = await compressAudio(inputPath);
-
-  // Lấy đường dẫn public sau khi nén
-  fileUrl = "/uploads/" + path.basename(outputPath);
-}
+    let fileUrl = null;
+    if (req.file) {
+      const inputPath = path.join(__dirname, "uploads", req.file.filename);
+      const outputPath = await compressAudio(inputPath);
+      fileUrl = `${process.env.SERVER_URL}/uploads/${path.basename(outputPath)}`;
+    }
 
     const newAlarm = await Alarm.create({
       title,
@@ -150,7 +151,6 @@ if (req.file) {
       heard: false,
     });
 
-    // 🕒 Lên lịch gửi MQTT tới ESP32
     const fullTime = new Date(`${date}T${time}:00`);
     schedule.scheduleJob(fullTime, () => {
       console.log(`⏰ Báo thức đến giờ: ${title}`);
@@ -169,12 +169,12 @@ if (req.file) {
   }
 });
 
-// 🧾 Lấy danh sách báo thức
+// 🧾 Danh sách báo thức
 app.get("/api/alarms", async (req, res) => {
   try {
     const alarms = await Alarm.find().sort({ date: -1, time: -1 });
     res.json(alarms);
-  } catch (err) {
+  } catch {
     res.status(500).json({ success: false });
   }
 });
@@ -208,6 +208,3 @@ mongoose.connection.once("open", () => {
     console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`)
   );
 });
-
-
-
