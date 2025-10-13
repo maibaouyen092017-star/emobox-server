@@ -105,8 +105,13 @@ app.post("/api/alarms", upload.single("file"), async (req, res) => {
 
 // 📜 Lấy danh sách báo thức
 app.get("/api/alarms", async (req, res) => {
-  const alarms = await Alarm.find().sort({ date: -1, time: -1 });
-  res.json(alarms);
+  try {
+    const alarms = await Alarm.find().sort({ date: -1, time: -1 });
+    res.json(alarms);
+  } catch (err) {
+    console.error("❌ Lỗi khi lấy danh sách báo thức:", err);
+    res.status(500).json({ success: false });
+  }
 });
 
 // ❌ Xoá báo thức
@@ -115,6 +120,7 @@ app.delete("/api/alarms/:id", async (req, res) => {
     await Alarm.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
+    console.error("❌ Lỗi khi xóa báo thức:", err);
     res.status(500).json({ success: false, message: "Không xóa được báo thức!" });
   }
 });
@@ -124,4 +130,14 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
   try {
     await Alarm.findByIdAndUpdate(req.params.id, { heard: true });
     res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Lỗi cập nhật trạng thái heard:", err);
+    res.status(500).json({ success: false });
   }
+});
+
+// =========================
+// 🚀 Chạy server
+// =========================
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
