@@ -131,4 +131,27 @@ async function deleteAlarm(id) {
   else alert("Xóa thất bại");
 }
 window.deleteAlarm = deleteAlarm;
+// 🔔 Lấy danh sách báo thức đã lưu và hiển thị
+async function loadAlarms() {
+  const listContainer = document.getElementById("alarmList");
+  if (!listContainer) return;
+
+  const res = await fetch("https://emobox-server.onrender.com/api/alarms");
+  const alarms = await res.json();
+
+  listContainer.innerHTML = alarms
+    .map(
+      (a) => `
+        <div class="alarm-item">
+          <b>${a.title || "Không tiêu đề"}</b><br>
+          📅 ${a.date} 🕒 ${a.time}<br>
+          🔊 <audio controls src="${a.fileUrl}" style="width: 200px"></audio>
+        </div>
+      `
+    )
+    .join("");
+}
+
+// Gọi khi load trang
+window.addEventListener("load", loadAlarms);
 
