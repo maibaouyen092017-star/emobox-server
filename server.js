@@ -13,7 +13,7 @@ import schedule from "node-schedule";
 import mqtt from "mqtt";
 import { fileURLToPath } from "url";
 import fs from "fs";
-
+import Alarm from "./models/Alarm.js";
 import authRoutes from "./routes/auth.js"; // router đăng nhập / đăng ký
 import voiceRoutes from "./routes/voice.js";
 
@@ -98,7 +98,14 @@ app.post("/api/alarms", upload.single("file"), async (req, res) => {
       client.publish("emobox/alarm", alarmFilePath);
       console.log(`⏰ Báo thức phát: ${alarmFilePath}`);
     });
-
+    // Lưu vào database
+const newAlarm = new Alarm({
+  title,
+  date,
+  time,
+  fileUrl: alarmFilePath,
+});
+await newAlarm.save();
     console.log(`💾 Báo thức lưu: ${title} vào ${fullTime.toLocaleString()}`);
 
     res.json({
@@ -130,3 +137,4 @@ app.get("/api/alarms", (req, res) => {
 // =========================
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+
