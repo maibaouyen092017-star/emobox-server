@@ -89,7 +89,7 @@ router.get("/wait-voice", async (req, res) => {
 
   checkVoice();
 });
-import { mixAudio } from "./utils/mixAudio.js";  // thêm dòng này trên đầu file
+import { mixAudio } from "../utils/mixAudio.js";  // thêm dòng này trên đầu file
 
 // Trong đoạn POST /api/alarms:
 const voiceFilePath = path.join(process.cwd(), "uploads", req.file.filename);
