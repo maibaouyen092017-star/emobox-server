@@ -1,4 +1,7 @@
 // utils/mixAudio.js
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
+
 import ffmpeg from "fluent-ffmpeg";
 import path from "path";
 import fs from "fs";
