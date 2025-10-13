@@ -80,6 +80,25 @@ client.on("error", (err) => console.error("❌ MQTT Error:", err));
 // 🎙️ Upload voice realtime
 // =========================
 const upload = multer({ dest: path.join(__dirname, "uploads/") });
+import { exec } from "child_process";
+
+// 🔉 Hàm tự động nén file MP3 về dạng nhẹ, phù hợp ESP32
+async function compressAudio(inputPath) {
+  return new Promise((resolve, reject) => {
+    const outputPath = inputPath.replace(/\.mp3$/, "_small.mp3");
+    const cmd = `ffmpeg -y -i "${inputPath}" -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
+
+    exec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        console.error("❌ Lỗi nén file âm thanh:", error);
+        reject(error);
+      } else {
+        console.log("✅ Đã nén file âm thanh:", outputPath);
+        resolve(outputPath);
+      }
+    });
+  });
+}
 
 // ✅ Upload file realtime (tin nhắn gửi ngay)
 app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
@@ -174,14 +193,6 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
-import { exec } from "child_process";
-
-// Sau khi upload file voice:
-exec(`ffmpeg -i ${req.file.path} -ac 1 -ar 16000 -b:a 64k ${req.file.path}_small.mp3`, 
-  (err) => {
-    if (err) console.error("❌ Lỗi nén file:", err);
-    else console.log("✅ Đã nén file giọng nói!");
-});
 
 // =========================
 // 🚀 Khởi động server
@@ -192,4 +203,5 @@ mongoose.connection.once("open", () => {
     console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`)
   );
 });
+
 
