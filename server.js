@@ -1,5 +1,5 @@
 // =========================
-// 📦 EMOBOX SERVER (Hoàn chỉnh - Fixed alarms route)
+// 📦 EMOBOX SERVER (Hoàn chỉnh)
 // =========================
 
 import express from "express";
@@ -14,7 +14,7 @@ import mqtt from "mqtt";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import Alarm from "./models/Alarm.js";
-import authRoutes from "./routes/auth.js"; // router đăng nhập / đăng ký
+import authRoutes from "./routes/auth.js";
 import voiceRoutes from "./routes/voice.js";
 
 const app = express();
@@ -27,16 +27,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // =========================
-// 📂 Cấu hình đường dẫn tuyệt đối
+// 📂 Đường dẫn tuyệt đối
 // =========================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // =========================
-// 🖼️ Cho phép truy cập logo và thư mục public + uploads
+// 🖼️ Cho phép truy cập public / uploads / music
 // =========================
 app.use("/logo.jpg", express.static(path.join(__dirname, "logo.jpg")));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/music", express.static(path.join(__dirname, "music")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // =========================
@@ -48,93 +49,79 @@ mongoose
   .catch((err) => console.error("❌ MongoDB Error:", err));
 
 // =========================
-// 🔑 Đăng nhập / Đăng ký
+// 🔑 Routes
 // =========================
 app.use("/auth", authRoutes);
+app.use("/api", voiceRoutes);
 
 // =========================
-// 📡 Cấu hình MQTT
+// 📡 MQTT
 // =========================
 const client = mqtt.connect(process.env.MQTT_BROKER || "mqtt://test.mosquitto.org", {
-  family: 4, // chỉ dùng IPv4
+  family: 4,
 });
 
 client.on("connect", () => console.log("✅ MQTT Connected"));
 client.on("error", (err) => console.error("❌ MQTT Error:", err));
 
 // =========================
-// 🎙️ Upload file âm thanh Realtime
+// 🎙️ Upload file Realtime
 // =========================
 const upload = multer({ dest: path.join(__dirname, "uploads/") });
 
-app.post("/api/upload", upload.single("audio"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ success: false, message: "Không có file được gửi lên!" });
-
-    console.log("📁 File âm thanh nhận:", req.file.filename);
-    client.publish("emobox/audio", req.file.filename);
-
-    res.status(200).json({ success: true, message: "Upload thành công!" });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Lỗi xử lý file!" });
-  }
-});
-
 // =========================
-// ⏰ Đặt báo thức bằng giọng nói (với file)
+// ⏰ Báo thức (voice + music)
 // =========================
 app.post("/api/alarms", upload.single("file"), async (req, res) => {
   try {
     const { title, date, time } = req.body;
-    if (!date || !time) return res.status(400).json({ success: false, message: "Thiếu ngày giờ!" });
-    if (!req.file) return res.status(400).json({ success: false, message: "Thiếu file âm thanh!" });
+    if (!date || !time)
+      return res.status(400).json({ success: false, message: "Thiếu ngày giờ!" });
 
     const fullTime = new Date(`${date}T${time}:00`);
-    const alarmFilePath = `/uploads/${req.file.filename}`;
+    const fileUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
-    // Đặt lịch gửi MQTT đến ESP
+    // Lưu DB
+    const newAlarm = await Alarm.create({ title, date, time, fileUrl });
+
+    // Lên lịch gửi đến ESP32
     schedule.scheduleJob(fullTime, () => {
-      client.publish("emobox/alarm", alarmFilePath);
-      console.log(`⏰ Báo thức phát: ${alarmFilePath}`);
+      console.log(`⏰ Đến giờ báo thức: ${title}`);
+      const payload = JSON.stringify({
+        id: newAlarm._id.toString(),
+        title,
+        voiceUrl: `${process.env.SERVER_URL}${fileUrl}`,
+        musicUrl: `${process.env.SERVER_URL}/music/alarm.mp3`,
+      });
+      client.publish("emobox/alarm", payload);
     });
-    // Lưu vào database
-const newAlarm = new Alarm({
-  title,
-  date,
-  time,
-  fileUrl: alarmFilePath,
-});
-await newAlarm.save();
-    console.log(`💾 Báo thức lưu: ${title} vào ${fullTime.toLocaleString()}`);
 
-    res.json({
-      success: true,
-      message: "Đã lưu báo thức thành công!",
-      data: { title, date, time, fileUrl: alarmFilePath },
-    });
+    res.json({ success: true, alarm: newAlarm });
   } catch (err) {
     console.error("❌ Lỗi khi lưu báo thức:", err);
     res.status(500).json({ success: false, message: "Lỗi server khi lưu báo thức!" });
   }
 });
 
-// =========================
-// ✅ API kiểm tra danh sách báo thức (tùy chọn)
-// =========================
-app.get("/api/alarms", (req, res) => {
-  const folder = path.join(__dirname, "uploads");
-  const files = fs.existsSync(folder) ? fs.readdirSync(folder) : [];
-  const list = files.map((f) => ({
-    file: f,
-    url: `/uploads/${f}`,
-  }));
-  res.json(list);
+// 📜 Lấy danh sách báo thức
+app.get("/api/alarms", async (req, res) => {
+  const alarms = await Alarm.find().sort({ date: -1, time: -1 });
+  res.json(alarms);
 });
 
-// =========================
-// 🚀 Chạy server
-// =========================
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
+// ❌ Xoá báo thức
+app.delete("/api/alarms/:id", async (req, res) => {
+  try {
+    await Alarm.findByIdAndDelete(req.params.id);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Không xóa được báo thức!" });
+  }
+});
 
+// ✅ Nhận phản hồi “đã nghe” từ ESP32
+app.post("/api/alarms/heard/:id", async (req, res) => {
+  try {
+    await Alarm.findByIdAndUpdate(req.params.id, { heard: true });
+    res.json({ success: true });
+  }
