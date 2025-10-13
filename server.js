@@ -142,6 +142,10 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
     res.status(500).json({ success: false });
   }
 });
+["uploads", "music", "public"].forEach(dir => {
+  const p = path.join(__dirname, dir);
+  if (!fs.existsSync(p)) fs.mkdirSync(p);
+});
 
 // =========================
 // 🚀 Khởi động server
@@ -150,3 +154,4 @@ const PORT = process.env.PORT || 3000;
 mongoose.connection.once("open", () => {
   app.listen(PORT, () => console.log(`🚀 EmoBox Server đang chạy trên cổng ${PORT}`));
 });
+
