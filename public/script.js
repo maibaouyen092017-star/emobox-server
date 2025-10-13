@@ -1,5 +1,5 @@
 // ================== EmoBox Frontend ==================
-const API_BASE = window.location.origin;
+const API_BASE = "https://emobox-server.onrender.com";
 let mediaRecorder, alarmRecorder;
 let chunks = [], alarmChunks = [];
 let audioBlob = null, alarmBlob = null;
