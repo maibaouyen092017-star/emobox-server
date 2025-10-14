@@ -48,7 +48,7 @@ app.use("/music", express.static(path.join(__dirname, "music")));
 app.use(express.static(path.join(__dirname, "public")));
 
 // =========================
-// 🌐 Kết nối MongoDB
+// 🌐 MongoDB
 // =========================
 mongoose.connect(process.env.MONGO_URL, {
   useNewUrlParser: true,
@@ -75,22 +75,24 @@ client.on("error", (err) => console.error("❌ MQTT Error:", err));
 // =========================
 // 🎙️ Upload + nén file
 // =========================
+
+// 🧩 Cấu hình multer để luôn có đuôi file (Chrome gửi webm)
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "uploads"));
-  },
+  destination: (req, file, cb) => cb(null, path.join(__dirname, "uploads")),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname) || ".webm"; // 🧩 thêm đuôi mặc định
+    const ext = path.extname(file.originalname) || ".webm";
     cb(null, `${Date.now()}${ext}`);
   },
 });
 const upload = multer({ storage });
 
-
+// 🧩 Hàm nén file thành MP3 nhẹ cho ESP32
 async function compressAudio(inputPath) {
   return new Promise((resolve, reject) => {
     const outputPath = inputPath.replace(path.extname(inputPath), "_small.mp3");
-    const cmd = `"${FFMPEG_PATH}" -y -i "${inputPath}" -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
+
+    // ép ffmpeg đọc webm → mp3 16k mono bitrate thấp
+    const cmd = `"${FFMPEG_PATH}" -y -i "${inputPath}" -vn -acodec libmp3lame -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
 
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -104,7 +106,8 @@ async function compressAudio(inputPath) {
   });
 }
 
-// ✅ Gửi realtime
+// =========================
+// 📤 Upload realtime (tin nhắn)
 app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
   try {
     if (!req.file)
@@ -116,15 +119,15 @@ app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
 
     const payload = JSON.stringify({
       id: Date.now().toString(),
-      voiceUrl: fileUrl,
       title: req.body.title || "Tin nhắn mới",
+      voiceUrl: fileUrl,
     });
 
     if (client.connected) {
       client.publish("emobox/alarm", payload);
       console.log("📢 Gửi MQTT realtime:", payload);
     } else {
-      console.warn("⚠️ MQTT chưa sẵn sàng, bỏ qua gửi realtime!");
+      console.warn("⚠️ MQTT chưa sẵn sàng!");
     }
 
     res.json({ success: true, voiceUrl: fileUrl });
@@ -134,7 +137,8 @@ app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
   }
 });
 
-// ✅ Hẹn giờ báo thức
+// =========================
+// ⏰ Hẹn giờ báo thức
 app.post("/api/alarms", upload.single("voice"), async (req, res) => {
   try {
     const { title, date, time } = req.body;
@@ -150,6 +154,7 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
 
     const newAlarm = await Alarm.create({ title, date, time, fileUrl, heard: false });
 
+    // 🕒 Lên lịch gửi MQTT
     const fullTime = new Date(`${date}T${time}:00`);
     schedule.scheduleJob(fullTime, () => {
       console.log(`⏰ Báo thức đến giờ: ${title}`);
@@ -163,26 +168,31 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
 
     res.json({ success: true, alarm: newAlarm });
   } catch (err) {
-    console.error("❌ Lỗi lưu báo thức:", err.message);
+    console.error("❌ Lỗi lưu báo thức:", err);
     res.status(500).json({ success: false, message: "Lỗi server khi lưu báo thức!" });
   }
 });
 
-// ✅ API khác
-app.get("/api/alarms", async (_, res) => res.json(await Alarm.find().sort({ date: -1, time: -1 })));
+// =========================
+// 🧾 Quản lý báo thức
+app.get("/api/alarms", async (_, res) => {
+  const alarms = await Alarm.find().sort({ date: -1, time: -1 });
+  res.json(alarms);
+});
+
 app.delete("/api/alarms/:id", async (req, res) => {
   await Alarm.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
+
 app.post("/api/alarms/heard/:id", async (req, res) => {
   await Alarm.findByIdAndUpdate(req.params.id, { heard: true });
   res.json({ success: true });
 });
 
+// =========================
 // 🚀 Start
 const PORT = process.env.PORT || 3000;
 mongoose.connection.once("open", () => {
   app.listen(PORT, () => console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`));
 });
-
-
