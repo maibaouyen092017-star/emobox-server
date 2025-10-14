@@ -75,7 +75,17 @@ client.on("error", (err) => console.error("❌ MQTT Error:", err));
 // =========================
 // 🎙️ Upload + nén file
 // =========================
-const upload = multer({ dest: path.join(__dirname, "uploads/") });
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "uploads"));
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname) || ".webm"; // 🧩 thêm đuôi mặc định
+    cb(null, `${Date.now()}${ext}`);
+  },
+});
+const upload = multer({ storage });
+
 
 async function compressAudio(inputPath) {
   return new Promise((resolve, reject) => {
@@ -174,3 +184,4 @@ const PORT = process.env.PORT || 3000;
 mongoose.connection.once("open", () => {
   app.listen(PORT, () => console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`));
 });
+
