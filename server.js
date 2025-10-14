@@ -89,7 +89,7 @@ const upload = multer({ storage });
 
 async function compressAudio(inputPath) {
   return new Promise((resolve, reject) => {
-    const outputPath = inputPath.replace(/\.mp3$/, "_small.mp3");
+    const outputPath = inputPath.replace(path.extname(inputPath), "_small.mp3");
     const cmd = `"${FFMPEG_PATH}" -y -i "${inputPath}" -ac 1 -ar 16000 -b:a 64k "${outputPath}"`;
 
     exec(cmd, (error, stdout, stderr) => {
@@ -184,4 +184,5 @@ const PORT = process.env.PORT || 3000;
 mongoose.connection.once("open", () => {
   app.listen(PORT, () => console.log(`🚀 EmoBox Server chạy tại cổng ${PORT}`));
 });
+
 
