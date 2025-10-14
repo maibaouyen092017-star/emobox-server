@@ -159,7 +159,7 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
     const newAlarm = await Alarm.create({ title: title || "Báo thức", date, time, fileUrl, heard: false });
 
     // Schedule MQTT publish
-    const fullTime = new Date(`${date}T${time}:00`);
+    const fullTime = new Date(`${date}T${time}:00+07:00`);
     schedule.scheduleJob(fullTime, () => {
       const payload = JSON.stringify({
         id: newAlarm._id.toString(),
@@ -216,4 +216,8 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
 const PORT = process.env.PORT || 3000;
 mongoose.connection.once("open", () => {
   app.listen(PORT, () => console.log(`🚀 EmoBox Server chạy tại ${PORT} (SERVER_URL=${SERVER_URL})`));
+});
+client.on("close", () => {
+  console.log("⚠️ MQTT disconnected, reconnecting...");
+  client.reconnect();
 });
