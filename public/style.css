@@ -239,3 +239,29 @@ footer {
 #switchAuth a:hover {
   color: #0056b3;
 }
+/* ✅ Trạng thái báo thức */
+.alarm {
+  background: #f1f5ff;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.alarm-status {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.alarm-status.heard {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.alarm-status.pending {
+  background: #fee2e2;
+  color: #991b1b;
+}
