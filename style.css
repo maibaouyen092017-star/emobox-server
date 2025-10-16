@@ -1,22 +1,84 @@
-body { font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background: #f5f8fb; }
-.navbar { background: #fff; }
-.card { border-radius: 12px; }
-h4 { font-weight: 700; }
-#btnStartNow, #btnStartAlarm { border-radius: 12px; padding: 14px; font-size: 1rem; }
-audio { width: 100%; margin-top: 6px; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: #f5f8fb;
+}
+
+.navbar {
+  background: #fff;
+}
+
+.card {
+  border-radius: 12px;
+}
+
+h4 {
+  font-weight: 700;
+}
+
+#btnStartNow,
+#btnStartAlarm {
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 1rem;
+}
+
+audio {
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* 🟢 Thêm trạng thái ĐÃ NHẬN / CHƯA NHẬN */
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-heard {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-unheard {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* 🧠 Hiệu ứng mượt cho badge khi cập nhật */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.status-badge {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* ⚠️ Responsive giữ nguyên như bạn yêu cầu */
 @media (max-width: 768px) {
   .card {
     margin-bottom: 15px;
   }
-  button, input, select {
+
+  button,
+  input,
+  select {
     font-size: 1rem !important;
   }
+
   audio {
     width: 100%;
   }
+
   footer {
     font-size: 0.85rem;
   }
 }
-}
-
