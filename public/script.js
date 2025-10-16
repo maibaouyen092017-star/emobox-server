@@ -2,6 +2,28 @@
 // 🎙️ EmoBox Frontend Script
 // ============================
 console.log("✅ EmoBox script.js loaded");
+// -----------------------------
+// 🔔 Realtime: Khi ESP đã phát xong tin nhắn/báo thức
+// -----------------------------
+socket.on("voiceHeard", (data) => {
+  console.log("✅ Voice heard:", data);
+  const el = document.querySelector(`[data-id="${data.id}"] .alarm-status`);
+  if (el) {
+    el.textContent = "✅ Đã nhận";
+    el.classList.remove("pending");
+    el.classList.add("heard");
+  }
+});
+
+socket.on("alarmHeard", (data) => {
+  console.log("⏰ Alarm heard:", data);
+  const el = document.querySelector(`[data-id="${data.id}"] .alarm-status`);
+  if (el) {
+    el.textContent = "✅ Đã nhận";
+    el.classList.remove("pending");
+    el.classList.add("heard");
+  }
+});
 
 const API_BASE = "https://emobox-server.onrender.com"; // đổi nếu server khác
 
