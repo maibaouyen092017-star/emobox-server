@@ -1,9 +1,14 @@
 // ============================
-// 🎙️ EmoBox Frontend Script
+// 🎙️ EmoBox Frontend Script (Fixed)
 // ============================
 console.log("✅ EmoBox script.js loaded");
+
+// ⚡ Kết nối socket.io tới backend
+const socket = io("https://emobox-server.onrender.com"); // chỉnh nếu backend URL khác
+const API_BASE = "https://emobox-server.onrender.com"; 
+
 // -----------------------------
-// 🔔 Realtime: Khi ESP đã phát xong tin nhắn/báo thức
+// 🔔 Realtime: Nhận sự kiện từ ESP
 // -----------------------------
 socket.on("voiceHeard", (data) => {
   console.log("✅ Voice heard:", data);
@@ -24,8 +29,6 @@ socket.on("alarmHeard", (data) => {
     el.classList.add("heard");
   }
 });
-
-const API_BASE = "https://emobox-server.onrender.com"; // đổi nếu server khác
 
 // --- Refs
 const recordBtn = document.getElementById("recordBtn");
@@ -49,7 +52,7 @@ let alarmRecorder, alarmChunks = [];
 let voiceBlob, alarmBlob;
 
 // -----------------------------
-// 🔊 Helper: Kiểm tra MIME phù hợp
+// 🔊 Helper: MIME phù hợp
 // -----------------------------
 function getSupportedMime() {
   const list = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
@@ -58,9 +61,9 @@ function getSupportedMime() {
 }
 
 // -----------------------------
-// 🎤 Bắt đầu ghi realtime
+// 🎤 Ghi realtime
 // -----------------------------
-recordBtn.addEventListener("click", async () => {
+recordBtn?.addEventListener("click", async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream, { mimeType: getSupportedMime() });
@@ -81,8 +84,7 @@ recordBtn.addEventListener("click", async () => {
   }
 });
 
-// 🛑 Dừng ghi realtime
-stopBtn.addEventListener("click", () => {
+stopBtn?.addEventListener("click", () => {
   if (mediaRecorder && mediaRecorder.state === "recording") {
     mediaRecorder.stop();
     recordBtn.disabled = false;
@@ -90,8 +92,8 @@ stopBtn.addEventListener("click", () => {
   }
 });
 
-// 📤 Gửi tin nhắn realtime tới server
-sendBtn.addEventListener("click", async () => {
+// 📤 Gửi tin nhắn realtime
+sendBtn?.addEventListener("click", async () => {
   if (!voiceBlob) return alert("Bạn chưa ghi âm tin nhắn!");
   sendBtn.disabled = true;
 
@@ -108,9 +110,7 @@ sendBtn.addEventListener("click", async () => {
       voiceBlob = null;
       audioPlayer.src = "";
       msgTitle.value = "";
-    } else {
-      alert("Gửi thất bại!");
-    }
+    } else alert("Gửi thất bại!");
   } catch (err) {
     console.error(err);
     alert("Không thể gửi đến server!");
@@ -120,9 +120,9 @@ sendBtn.addEventListener("click", async () => {
 });
 
 // -----------------------------
-// ⏰ Ghi âm cho báo thức
+// ⏰ Báo thức
 // -----------------------------
-alarmRecordBtn.addEventListener("click", async () => {
+alarmRecordBtn?.addEventListener("click", async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     alarmRecorder = new MediaRecorder(stream, { mimeType: getSupportedMime() });
@@ -136,14 +136,13 @@ alarmRecordBtn.addEventListener("click", async () => {
     alarmRecorder.start();
     alarmRecordBtn.disabled = true;
     alarmStopBtn.disabled = false;
-    console.log("🎧 Bắt đầu ghi báo thức...");
   } catch (err) {
     alert("Không truy cập được micro!");
     console.error(err);
   }
 });
 
-alarmStopBtn.addEventListener("click", () => {
+alarmStopBtn?.addEventListener("click", () => {
   if (alarmRecorder && alarmRecorder.state === "recording") {
     alarmRecorder.stop();
     alarmRecordBtn.disabled = false;
@@ -152,7 +151,7 @@ alarmStopBtn.addEventListener("click", () => {
 });
 
 // 💾 Lưu báo thức
-saveAlarmBtn.addEventListener("click", async () => {
+saveAlarmBtn?.addEventListener("click", async () => {
   if (!alarmBlob) return alert("Bạn chưa ghi âm báo thức!");
   if (!alarmDate.value || !alarmTime.value) return alert("Nhập ngày & giờ!");
 
@@ -179,16 +178,17 @@ saveAlarmBtn.addEventListener("click", async () => {
 });
 
 // -----------------------------
-// 📋 Lấy danh sách báo thức
+// 📋 Danh sách báo thức
 // -----------------------------
 async function loadAlarms() {
   try {
     const res = await fetch(`${API_BASE}/api/alarms`);
     const list = await res.json();
     alarmList.innerHTML = list.map(a => `
-      <div class="alarm">
+      <div class="alarm" data-id="${a._id}">
         <b>${a.title}</b> — ${a.date} ${a.time}
         ${a.fileUrl ? `<audio controls src="${API_BASE}${a.fileUrl}"></audio>` : ""}
+        <span class="alarm-status pending">⏳ Chờ ESP</span>
         <button onclick="deleteAlarm('${a._id}')">🗑️ Xóa</button>
       </div>
     `).join("");
@@ -198,7 +198,6 @@ async function loadAlarms() {
   }
 }
 
-// 🗑️ Xóa báo thức
 window.deleteAlarm = async (id) => {
   if (!confirm("Xóa báo thức này?")) return;
   await fetch(`${API_BASE}/api/alarms/${id}`, { method: "DELETE" });
