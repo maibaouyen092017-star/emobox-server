@@ -1,4 +1,4 @@
-// server.js - EmoBox (Render + MQTT + Audio Compress Ready)
+// server.js - EmoBox (Render + MQTT + Audio Compress + Realtime)
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
@@ -11,7 +11,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { exec } from "child_process";
 import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
-import http from "http"; // ✅ Bổ sung
+import http from "http";
 import Alarm from "./models/Alarm.js";
 import authRoutes from "./routes/auth.js";
 import voiceRoutes from "./routes/voice.js";
@@ -21,7 +21,7 @@ dotenv.config();
 const FFMPEG_PATH = ffmpegInstaller.path || "ffmpeg";
 const app = express();
 
-// ====== Middleware & Basic Config ======
+// ===== Middleware & Basic Config =====
 app.use(cors({
   origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(",") : ["http://localhost:3000"],
   credentials: true,
@@ -33,41 +33,45 @@ app.use(express.urlencoded({ extended: true }));
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ====== Ensure folders exist ======
+// ===== Ensure folders exist =====
 ["uploads", "music", "public"].forEach(dir => {
   const p = path.join(__dirname, dir);
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
 });
 
-// ====== Static Routes ======
+// ===== Static Routes =====
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/music", express.static(path.join(__dirname, "music")));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ✅ Root route so Render sees it's alive
+// ✅ Root route
 app.get("/", (req, res) => res.send("✅ EmoBox server online & ready."));
 
-// ====== SERVER_URL ======
+// ===== SERVER_URL =====
 const SERVER_URL = (process.env.SERVER_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
 
-// ====== MongoDB ======
+// ===== MongoDB =====
 const MONGO = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/emobox";
 mongoose.connect(MONGO, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.error("❌ MongoDB Error:", err));
 
-// ====== Routes ======
+// ===== Routes =====
 app.use("/auth", authRoutes);
 app.use("/api", voiceRoutes);
 
-// ====== MQTT ======
+// ===== MQTT =====
 const MQTT_BROKER = process.env.MQTT_BROKER || "mqtt://test.mosquitto.org";
 const client = mqtt.connect(MQTT_BROKER, { family: 4 });
 
 client.on("connect", () => console.log("✅ MQTT Connected"));
 client.on("error", (err) => console.error("❌ MQTT Error:", err));
+client.on("close", () => {
+  console.log("⚠️ MQTT disconnected, reconnecting...");
+  client.reconnect();
+});
 
-// ====== MULTER Storage ======
+// ===== MULTER Storage =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, path.join(__dirname, "uploads")),
   filename: (req, file, cb) => {
@@ -77,7 +81,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// ====== Audio Compression ======
+// ===== Audio Compression =====
 async function compressAudio(inputPath) {
   return new Promise((resolve, reject) => {
     try {
@@ -96,7 +100,19 @@ async function compressAudio(inputPath) {
   });
 }
 
-// ====== Upload Voice (Realtime) ======
+// ===== Socket.IO setup =====
+import { Server } from "socket.io";
+const httpServer = http.createServer(app);
+const io = new Server(httpServer, {
+  cors: { origin: "*", methods: ["GET", "POST"] },
+});
+
+io.on("connection", (socket) => {
+  console.log("🔗 Socket connected:", socket.id);
+  socket.on("disconnect", () => console.log("❌ Socket disconnected:", socket.id));
+});
+
+// ===== Upload Voice (Realtime) =====
 app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ success: false, message: "Không có file!" });
@@ -105,14 +121,18 @@ app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
     const outputPath = await compressAudio(inputPath);
     const fileUrl = `${SERVER_URL}/uploads/${path.basename(outputPath)}`;
 
-    const payload = JSON.stringify({
+    const payload = {
       id: Date.now().toString(),
       title: req.body.title || "Tin nhắn mới",
       voiceUrl: fileUrl,
-    });
+    };
 
-    if (client.connected) client.publish("emobox/alarm", payload);
+    // ✅ Đẩy tới ESP32
+    if (client.connected) client.publish("emobox/alarm", JSON.stringify(payload));
     else console.warn("⚠️ MQTT not connected.");
+
+    // ✅ Đẩy tới Web/PC realtime
+    io.emit("newAlarm", payload);
 
     res.json({ success: true, voiceUrl: fileUrl });
   } catch (err) {
@@ -121,7 +141,7 @@ app.post("/api/upload-voice", upload.single("voice"), async (req, res) => {
   }
 });
 
-// ====== Alarm Creation ======
+// ===== Alarm Creation =====
 app.post("/api/alarms", upload.single("voice"), async (req, res) => {
   try {
     const { title, date, time } = req.body;
@@ -144,7 +164,7 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
         voiceUrl: fileUrl,
       });
       if (client.connected) client.publish("emobox/alarm", payload);
-      else console.warn("⚠️ MQTT not connected at alarm time");
+      io.emit("newAlarm", { id: newAlarm._id.toString(), title: newAlarm.title, voiceUrl: fileUrl });
     });
 
     res.json({ success: true, alarm: newAlarm });
@@ -154,7 +174,7 @@ app.post("/api/alarms", upload.single("voice"), async (req, res) => {
   }
 });
 
-// ====== Alarm APIs ======
+// ===== Alarm APIs =====
 app.get("/api/alarms", async (req, res) => {
   try {
     const alarms = await Alarm.find().sort({ date: -1, time: -1 });
@@ -182,37 +202,10 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
   }
 });
 
-// ====== Start Server ======
+// ===== Start Server =====
 const PORT = process.env.PORT || 3000;
-import { Server } from "socket.io";
-
 mongoose.connection.once("open", () => {
-  const httpServer = http.createServer(app);
-  const io = new Server(httpServer, {
-    cors: { origin: "*", methods: ["GET", "POST"] },
-  });
-
-  io.on("connection", (socket) => {
-    console.log("🔗 Socket connected:", socket.id);
-
-    socket.on("disconnect", () => console.log("❌ Socket disconnected:", socket.id));
-  });
-
-  // Gửi sự kiện realtime khi ESP hoặc server cần
-  client.on("message", (topic, message) => {
-    if (topic === "emobox/alarm/heard") {
-      const data = JSON.parse(message.toString());
-      io.emit("alarmHeard", data);
-    }
-  });
-
   httpServer.listen(PORT, () =>
     console.log(`🚀 EmoBox Server (HTTP+Socket.IO) chạy tại ${PORT} (SERVER_URL=${SERVER_URL})`)
   );
 });
-
-client.on("close", () => {
-  console.log("⚠️ MQTT disconnected, reconnecting...");
-  client.reconnect();
-});
-
