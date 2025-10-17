@@ -184,12 +184,35 @@ app.post("/api/alarms/heard/:id", async (req, res) => {
 
 // ====== Start Server ======
 const PORT = process.env.PORT || 3000;
+import { Server } from "socket.io";
+
 mongoose.connection.once("open", () => {
-  app.listen(PORT, () =>
-    console.log(`🚀 EmoBox Server chạy tại ${PORT} (SERVER_URL=${SERVER_URL})`)
+  const httpServer = http.createServer(app);
+  const io = new Server(httpServer, {
+    cors: { origin: "*", methods: ["GET", "POST"] },
+  });
+
+  io.on("connection", (socket) => {
+    console.log("🔗 Socket connected:", socket.id);
+
+    socket.on("disconnect", () => console.log("❌ Socket disconnected:", socket.id));
+  });
+
+  // Gửi sự kiện realtime khi ESP hoặc server cần
+  client.on("message", (topic, message) => {
+    if (topic === "emobox/alarm/heard") {
+      const data = JSON.parse(message.toString());
+      io.emit("alarmHeard", data);
+    }
+  });
+
+  httpServer.listen(PORT, () =>
+    console.log(`🚀 EmoBox Server (HTTP+Socket.IO) chạy tại ${PORT} (SERVER_URL=${SERVER_URL})`)
   );
 });
+
 client.on("close", () => {
   console.log("⚠️ MQTT disconnected, reconnecting...");
   client.reconnect();
 });
+
